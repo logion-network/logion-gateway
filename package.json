@@ -13,7 +13,7 @@
         "generate-views": "npx openapi-typescript resources/schemas.json --output src/controllers/components.ts",
         "start": "yarn run build && NODE_ENV=development node dist/app.js",
         "serve": "tsc-watch --p ./tsconfig.app.json --onSuccess \"env NODE_ENV=development node dist/app.js\"",
-        "test": "jasmine",
+        "test": "jasmine --config=jasmine.json",
         "coverage": "nyc yarn run test"
     },
     "dependencies": {
@@ -26,7 +26,6 @@
         "dinoloop": "^2.4.0",
         "dotenv": "^16.0.0",
         "express": "^4.17.2",
-        "express-fileupload": "^1.2.1",
         "express-oas-generator": "^1.0.41",
         "inversify": "^6.0.1",
         "moment": "^2.29.1",

@@ -1980,10 +1980,10 @@ logform@^2.3.2, logform@^2.4.0:
     safe-stable-stringify "^2.3.1"
     triple-beam "^1.3.0"
 
-logion-api@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/logion-api/-/logion-api-0.1.0.tgz#a5fcddd9ae4ff9bc61cf69af323be768fb2175bd"
-  integrity sha512-A6cjI5UFT+8GVj3+foRpgzS22MlR0+M8/chUsG1wf40AkEL5oCRFNGGTLc7Mymjp3bp3XbErR4VP0vk4XNWbuQ==
+logion-api@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/logion-api/-/logion-api-0.1.1.tgz#7a6cfab40b39c350c06fd55f0498ad2d4a82d8e6"
+  integrity sha512-gQHTMwC1G57arujyKzOWW4DuLCSrlKJkk+PnZS4CfrGZ9Vrx4GzVbfzSLCg6m0Tskcku5SUaO6hc2KViasI6BA==
   dependencies:
     "@polkadot/api" "^7.6.1"
     "@polkadot/extension-dapp" "^0.42.7"

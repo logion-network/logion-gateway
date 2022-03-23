@@ -1,12 +1,11 @@
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpPost, NotFoundException, HttpPut, BadRequestException } from "dinoloop";
 import { OpenAPIV3 } from "express-oas-generator";
-import { Keyring } from '@polkadot/api';
 import { DispatchError } from '@polkadot/types/interfaces/system/types';
-import { buildApi } from 'logion-api/dist/Connection';
 
 import { components } from "./components";
 import { addTag, setControllerTag, setPathParameters, getDefaultResponsesNoContent, getRequestBody, getBodyContent } from "./doc";
+import { LogionService } from "../services/logion.service";
 
 type CreateCollectionItemView = components["schemas"]["CreateCollectionItemView"];
 type GetCollectionItemView = components["schemas"]["GetCollectionItemView"];
@@ -28,7 +27,9 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
 @Controller('/collection')
 export class CollectionController extends ApiController {
 
-    constructor() {
+    constructor(
+        private logionService: LogionService
+    ) {
         super();
     }
 
@@ -54,9 +55,8 @@ export class CollectionController extends ApiController {
         const itemId = body.itemId!;
         const itemDescription = body.itemDescription!;
 
-        const api = await buildApi(url);
-        const keyring = new Keyring({ type: 'sr25519' });
-        const keyPair = keyring.addFromUri(suri);
+        const api = await this.logionService.buildApi(url);
+        const keyPair = this.logionService.buildKeyringPair(suri);
 
         try {
             await new Promise<void>(async (resolve, reject) => {
@@ -115,7 +115,7 @@ export class CollectionController extends ApiController {
     async getCollectionItem(body: GetCollectionItemView, collectionLocId: string, itemId: string): Promise<CollectionItemView> {
         const url = body.webSocketUrl!;
 
-        const api = await buildApi(url);
+        const api = await this.logionService.buildApi(url);
         const item = await api.query.logionLoc.collectionItemsMap(collectionLocId, itemId);
         if(item.isSome) {
             return {
