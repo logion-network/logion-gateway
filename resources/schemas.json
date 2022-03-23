@@ -1,0 +1,70 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "logion gateway REST API views definition",
+        "version": "0.1.0"
+    },
+    "paths": {},
+    "components": {
+        "schemas": {
+            "CreateCollectionItemView": {
+                "type": "object",
+                "properties": {
+                    "webSocketUrl": {
+                        "$ref": "#/components/schemas/WebSocketUrl"
+                    },
+                    "suri": {
+                        "type": "string",
+                        "example": "used route main sock exotic mule screen whale dance tail ladder lift",
+                        "description": "The secret seed of collection's requester. May be provided in the mnemonic or hexadecimal form."
+                    },
+                    "itemId": {
+                        "$ref": "#/components/schemas/ItemId"
+                    },
+                    "itemDescription": {
+                        "$ref": "#/components/schemas/ItemDescription"
+                    }
+                }
+            },
+            "GetCollectionItemView": {
+                "type": "object",
+                "properties": {
+                    "webSocketUrl": {
+                        "$ref": "#/components/schemas/WebSocketUrl"
+                    }
+                }
+            },
+            "WebSocketUrl": {
+                "type": "string",
+                "example": "wss://test-rpc01.logion.network",
+                "description": "The WebSocket endpoint of a logion chain"
+            },
+            "ItemId": {
+                "type": "string",
+                "example": "0xc3e49c87aa19ec987501fc2e207f5928bd31ee948f69455c733416564da158c5",
+                "description": "The unique identifier of the item in the collection e.g. the hex representation of a file's SHA256 hash."
+            },
+            "ItemDescription": {
+                "type": "string",
+                "example": "NFT #1",
+                "description": "A string describing the item. The string must be at most 4096 UTF-8 encoded bytes long."
+            },
+            "CollectionItemView": {
+                "type": "object",
+                "properties": {
+                    "collectionLocId": {
+                        "type": "string",
+                        "example": "292327117366451619588297997097238907467",
+                        "description": "The Collection LOC's unique identifier."
+                    },
+                    "itemId": {
+                        "$ref": "#/components/schemas/ItemId"
+                    },
+                    "itemDescription": {
+                        "$ref": "#/components/schemas/ItemDescription"
+                    }
+                }
+            }
+        }
+    }
+}

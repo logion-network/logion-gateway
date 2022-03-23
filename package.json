@@ -1,0 +1,71 @@
+{
+    "name": "logion-gateway",
+    "version": "0.1.0",
+    "private": true,
+    "author": {
+        "name": "Logion Team",
+        "email": "info@logion.network",
+        "url": "https://logion.network/"
+    },
+    "license": "Apache-2.0",
+    "scripts": {
+        "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json",
+        "generate-views": "npx openapi-typescript resources/schemas.json --output src/controllers/components.ts",
+        "start": "yarn run build && NODE_ENV=development node dist/app.js",
+        "serve": "tsc-watch --p ./tsconfig.app.json --onSuccess \"env NODE_ENV=development node dist/app.js\"",
+        "test": "jasmine",
+        "coverage": "nyc yarn run test"
+    },
+    "dependencies": {
+        "logion-api": "^0.1.1",
+        "ansi-regex": "^6.0.1",
+        "axios": "^0.25.0",
+        "body-parser": "^1.19.1",
+        "bson": "^4.6.1",
+        "cors": "^2.8.5",
+        "dinoloop": "^2.4.0",
+        "dotenv": "^16.0.0",
+        "express": "^4.17.2",
+        "express-fileupload": "^1.2.1",
+        "express-oas-generator": "^1.0.41",
+        "inversify": "^6.0.1",
+        "moment": "^2.29.1",
+        "mongoose": "^6.1.6",
+        "mongoose-to-swagger": "^1.4.0",
+        "node-fetch": "3.1.1",
+        "openapi-typescript": "5.1.0",
+        "source-map-support": "^0.5.21",
+        "swagger-ui-express": "^4.3.0",
+        "uuid": "^8.3.2"
+    },
+    "devDependencies": {
+        "@istanbuljs/nyc-config-typescript": "^1.0.2",
+        "@tsconfig/node14": "^1.0.1",
+        "@types/cors": "^2.8.12",
+        "@types/express": "^4.17.13",
+        "@types/express-fileupload": "^1.2.2",
+        "@types/jasmine": "^3.10.3",
+        "@types/jsonwebtoken": "^8.5.8",
+        "@types/node": "^17.0.9",
+        "@types/nodemailer": "^6.4.4",
+        "@types/pug": "^2.0.6",
+        "@types/supertest": "^2.0.11",
+        "@types/swagger-ui-express": "^4.1.3",
+        "@types/uuid": "^8.3.4",
+        "jasmine": "^4.0.2",
+        "jasmine-spec-reporter": "^7.0.0",
+        "moq.ts": "^7.3.4",
+        "nyc": "^15.1.0",
+        "rimraf": "^3.0.2",
+        "supertest": "^6.2.1",
+        "ts-node": "^10.4.0",
+        "tsc-watch": "^4.6.0",
+        "typescript": "^4.5.4"
+    },
+    "engines": {
+        "node": ">=14"
+    },
+    "resolutions": {
+        "node-fetch": "2.6.7"
+    }
+}

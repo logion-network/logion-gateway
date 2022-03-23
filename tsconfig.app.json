@@ -1,0 +1,10 @@
+{
+    "extends": "./tsconfig",
+    "compilerOptions": {
+        "inlineSourceMap": true,
+    },
+    "exclude": [
+        "test/**/*.ts",
+        "node_modules"
+    ]
+}

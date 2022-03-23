@@ -1,0 +1,12 @@
+{
+    "extends": "@tsconfig/node14/tsconfig.json",
+    "compilerOptions": {
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "outDir": "dist"
+    },
+    "compileOnSave": false,
+    "exclude": [
+        "dist"
+    ]
+}
