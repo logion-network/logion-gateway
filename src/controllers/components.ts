@@ -44,6 +44,23 @@ export interface components {
       itemId?: components["schemas"]["ItemId"];
       itemDescription?: components["schemas"]["ItemDescription"];
     };
+    ErrorMetadataView: {
+      /**
+       * @description The name of the pallet which emitted the error. May be undefined if call was not dispatched.
+       * @example logionLoc
+       */
+      pallet?: string;
+      /**
+       * @description The error type. May be undefined if call was not dispatched.
+       * @example CollectionItemAlreadyExists
+       */
+      error?: string;
+      /**
+       * @description Additional information about the error.
+       * @example An item with same identifier already exists in the collection
+       */
+      details?: string;
+    };
   };
 }
 

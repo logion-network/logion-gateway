@@ -64,6 +64,26 @@
                         "$ref": "#/components/schemas/ItemDescription"
                     }
                 }
+            },
+            "ErrorMetadataView": {
+                "type": "object",
+                "properties": {
+                    "pallet": {
+                        "type": "string",
+                        "description": "The name of the pallet which emitted the error. May be undefined if call was not dispatched.",
+                        "example": "logionLoc"
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "The error type. May be undefined if call was not dispatched.",
+                        "example": "CollectionItemAlreadyExists"
+                    },
+                    "details": {
+                        "type": "string",
+                        "description": "Additional information about the error.",
+                        "example": "An item with same identifier already exists in the collection"
+                    }
+                }
             }
         }
     }

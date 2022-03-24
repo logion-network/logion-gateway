@@ -32,7 +32,7 @@ Install [Docker](https://www.docker.com/) on your machine then just run
 docker run --name logion-gateway -p 8080:8080 -d logionnetwork/logion-gateway:latest
 ```
 
-You may change the listening port by adding option `-e PORT=$SOME_OTHER_PORT`. If you do so, do not forget to change the `-p` option value accordingly.
+You may change the listening port within the `-p` option value.
 
 ## Usage
 
@@ -51,13 +51,15 @@ curl -v http://localhost:8080/api/collection/$COLLECTION_LOC_ID -d '{"webSocketU
 
 If the response has status code `200`, then the item has been successfully submitted (i.e. the transaction was put in a block).
 
-A response status code `400` may be returned in case of failure. Potential reasons are:
+A response status code `400` may be returned in case of failure. The response body then looks like this:
 
-- wrong endpoint,
-- bad credentials,
-- an item with the same ID already exists in the collection,
-- invalid collection id,
-- inability to pay some fees (balance too low).
+```
+{
+  "pallet": "...",
+  "error": "...",
+  "details": "..."
+}
+```
 
 ### Check an existing item
 
