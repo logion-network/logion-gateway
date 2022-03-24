@@ -1,7 +1,6 @@
 import { OpenAPIV3 } from "openapi-types";
 import express, { Express } from "express";
 import bodyParser from "body-parser";
-import fileUpload from "express-fileupload";
 import cors from "cors";
 import { Dino } from "dinoloop";
 import { Container } from "inversify";
@@ -41,11 +40,6 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
 
 export function setupApp(app: Express) {
     app.use(bodyParser.json());
-    app.use(fileUpload({
-        limits: { fileSize: 50 * 1024 * 1024 },
-        useTempFiles : true,
-        tempFileDir : '/tmp/',
-    }));
     app.use(cors());
 
     const dino = new Dino(app, '/api');
