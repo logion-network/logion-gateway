@@ -55,7 +55,9 @@ A response status code `400` may be returned in case of failure. Potential reaso
 
 - wrong endpoint,
 - bad credentials,
-- an item with the same ID already exists in the collection.
+- an item with the same ID already exists in the collection,
+- invalid collection id,
+- inability to pay some fees (balance too low).
 
 ### Check an existing item
 
