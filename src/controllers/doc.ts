@@ -108,13 +108,14 @@ export function getPublicResponses(view?: string): OpenAPIV3.ResponsesObject {
     };
 }
 
-export function getDefaultResponsesNoContent(): OpenAPIV3.ResponsesObject {
+export function getDefaultResponsesNoContent(errorContent?: { [media: string]: OpenAPIV3.MediaTypeObject }): OpenAPIV3.ResponsesObject {
     return {
         "204": {
             description: "No Content"
         },
         "400": {
-            description: "Bad Request"
+            description: "Bad Request",
+            content: errorContent
         }
     };
 }

@@ -37,7 +37,7 @@ export class CollectionController extends ApiController {
         const operationObject = spec.paths["/api/collection/{collectionLocId}"].post!;
         operationObject.summary = "Adds an item to an existing collection";
         operationObject.description = "";
-        operationObject.responses = getDefaultResponsesNoContent();
+        operationObject.responses = getDefaultResponsesNoContent(getBodyContent("ErrorMetadataView"));
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the collection loc"
         });
@@ -78,11 +78,14 @@ export class CollectionController extends ApiController {
                 }
             });
         } catch(error) {
-            if(error && typeof error === 'object' && 'toHuman' in error) {
+            if(error && typeof error === 'object' && 'isModule' in error) {
                 const dispatchError = error as DispatchError;
-                throw new BadRequestException(dispatchError.toHuman());
+                const metaError = this.logionService.buildErrorMetadata(api, dispatchError);
+                throw new BadRequestException(metaError);
             } else {
-                throw new BadRequestException(error);
+                throw new BadRequestException({
+                    details: `${error}`
+                });
             }
         }
     }
