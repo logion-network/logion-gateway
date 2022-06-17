@@ -2,7 +2,7 @@ import { injectable } from "inversify";
 import { ApiPromise, Keyring } from '@polkadot/api';
 import type { IKeyringPair } from '@polkadot/types/types';
 import { DispatchError } from '@polkadot/types/interfaces/system/types';
-import { buildApi } from 'logion-api/dist/Connection';
+import { buildApi } from '@logion/node-api';
 
 @injectable()
 export class LogionService {
