@@ -20,10 +20,7 @@ export class LogionService {
         if (dispatchError.isModule) {
             const module = dispatchError.asModule;
             try {
-                const metaError = api.registry.findMetaError({
-                    index: module.index,
-                    error: module.error
-                });
+                const metaError = api.registry.findMetaError(module);
                 if (metaError) {
                     return {
                         pallet: metaError.section,
