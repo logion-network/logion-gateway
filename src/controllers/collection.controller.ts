@@ -87,6 +87,8 @@ export class CollectionController extends ApiController {
                     details: `${error}`
                 });
             }
+        } finally {
+            await api.disconnect();
         }
     }
 
@@ -119,15 +121,19 @@ export class CollectionController extends ApiController {
         const url = body.webSocketUrl!;
 
         const api = await this.logionService.buildApi(url);
-        const item = await api.query.logionLoc.collectionItemsMap(collectionLocId, itemId);
-        if(item.isSome) {
-            return {
-                collectionLocId,
-                itemId,
-                itemDescription: item.unwrap().description.toUtf8()
+        try {
+            const item = await api.query.logionLoc.collectionItemsMap(collectionLocId, itemId);
+            if(item.isSome) {
+                return {
+                    collectionLocId,
+                    itemId,
+                    itemDescription: item.unwrap().description.toUtf8()
+                }
+            } else {
+                throw new NotFoundException();
             }
-        } else {
-            throw new NotFoundException();
+        } finally {
+            await api.disconnect();
         }
     }
 }

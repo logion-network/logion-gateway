@@ -129,7 +129,8 @@ function mockForAdd(container: Container): void {
                     }
                 })
             }
-        }
+        },
+        disconnect: () => {}
     };
     const logionService = new Mock<LogionService>();
     logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiMock as ApiPromise));
@@ -167,7 +168,8 @@ function mockForDispatchError(container: Container): void {
                     }
                 })
             }
-        }
+        },
+        disconnect: () => {}
     };
     const logionService = new Mock<LogionService>();
     container.bind(LogionService).toConstantValue(logionService.object());
@@ -199,7 +201,8 @@ function mockForSubmitError(container: Container): void {
                     }
                 })
             }
-        }
+        },
+        disconnect: () => {}
     };
     const logionService = new Mock<LogionService>();
     container.bind(LogionService).toConstantValue(logionService.object());
@@ -233,7 +236,8 @@ function mockForCheck(container: Container): void {
                     }
                 }
             }
-        }
+        },
+        disconnect: () => {}
     };
     const logionService = new Mock<LogionService>();
     logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiMock as ApiPromise));
