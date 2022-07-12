@@ -62,7 +62,7 @@ export class CollectionController extends ApiController {
             await new Promise<void>(async (resolve, reject) => {
                 try {
                     const unsub = await api.tx.logionLoc
-                    .addCollectionItem(collectionLocId, itemId, itemDescription)
+                    .addCollectionItem(collectionLocId, itemId, itemDescription, [])
                     .signAndSend(keyPair, (result) => {
                         if (result.status.isInBlock) {
                             unsub();
