@@ -1,6 +1,6 @@
 {
     "name": "logion-gateway",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "private": true,
     "author": {
         "name": "Logion Team",
@@ -17,7 +17,7 @@
         "coverage": "nyc yarn run test"
     },
     "dependencies": {
-        "@logion/node-api": "^0.5.0-2",
+        "@logion/node-api": "^0.5.0",
         "ansi-regex": "^6.0.1",
         "body-parser": "^1.19.1",
         "bson": "^4.6.1",
