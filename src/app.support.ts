@@ -5,12 +5,12 @@ import cors from "cors";
 import { Dino } from "dinoloop";
 import { Container } from "inversify";
 
-import { setOpenApi3, loadSchemasIntoSpec } from "./controllers/doc";
-import { ApplicationErrorController } from "./controllers/application.error.controller";
-import { JsonResponse } from "./middlewares/json.response";
-import { AppContainer } from "./container/app.container";
+import { setOpenApi3, loadSchemasIntoSpec } from "./controllers/doc.js";
+import { ApplicationErrorController } from "./controllers/application.error.controller.js";
+import { JsonResponse } from "./middlewares/json.response.js";
+import { AppContainer } from "./container/app.container.js";
 
-import { CollectionController, fillInSpec as fillInSpecCollection } from "./controllers/collection.controller";
+import { CollectionController, fillInSpec as fillInSpecCollection } from "./controllers/collection.controller.js";
 
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     setOpenApi3(spec);

@@ -1,12 +1,12 @@
 # Build backend
-FROM node:16 AS build
+FROM node:18 AS build
 WORKDIR /tmp/logion-gateway
 COPY . .
 RUN yarn install --immutable
 RUN yarn build
 
 # Backend image
-FROM node:16
+FROM node:18
 
 COPY --from=build /tmp/logion-gateway/dist dist
 COPY --from=build /tmp/logion-gateway/node_modules node_modules

@@ -5,6 +5,7 @@
     },
     "exclude": [
         "test/**/*.ts",
+        "integration/**/*.ts",
         "node_modules"
     ]
 }

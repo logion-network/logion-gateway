@@ -88,3 +88,9 @@ The detailed API documentation of the gateway is exposed at this URL (please cha
 ```
 http://localhost:8080/api-docs
 ```
+
+## Testing
+
+Both unit tests and integration tests are provided. Unit tests are executed by running `yarn test` and integration tests by running `yarn integration-test`.
+The integration tests are executed against the latest Docker image. Therefore, the image must be rebuilt in case of code changes by running
+`docker build . -t logionnetwork/logion-gateway:latest`.
