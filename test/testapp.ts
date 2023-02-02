@@ -1,10 +1,10 @@
-import '../src/container/inversify.decorate';
+import '../src/container/inversify.decorate.js';
 import express, { Express } from 'express';
 import bodyParser from 'body-parser';
 import { Dino } from 'dinoloop';
 import { Container } from 'inversify';
-import { ApplicationErrorController } from '../src/controllers/application.error.controller';
-import { JsonResponse } from '../src/middlewares/json.response';
+import { ApplicationErrorController } from '../src/controllers/application.error.controller.js';
+import { JsonResponse } from '../src/middlewares/json.response.js';
 
 export function setupApp<T>(
     controller: Function & { prototype: T; },

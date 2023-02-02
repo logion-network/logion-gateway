@@ -5,9 +5,9 @@ import { ApiPromise } from "@polkadot/api";
 import type { IKeyringPair } from '@polkadot/types/types';
 import { DispatchError } from '@polkadot/types/interfaces/system/types';
 
-import { setupApp } from "./testapp";
-import { CollectionController } from "../src/controllers/collection.controller";
-import { LogionService } from "../src/services/logion.service";
+import { setupApp } from "./testapp.js";
+import { CollectionController } from "../src/controllers/collection.controller.js";
+import { LogionService } from "../src/services/logion.service.js";
 
 const expectedWebSocketUrl = "ws://localhost:9944";
 const expectedCollectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";

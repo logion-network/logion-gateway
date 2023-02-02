@@ -1,6 +1,6 @@
 {
     "name": "logion-gateway",
-    "version": "0.2.5",
+    "version": "0.2.7",
     "private": true,
     "author": {
         "name": "Logion Team",
@@ -9,15 +9,16 @@
     },
     "license": "Apache-2.0",
     "scripts": {
-        "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json",
+        "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json && cp package.json dist/",
         "generate-views": "npx openapi-typescript resources/schemas.json --output src/controllers/components.ts",
         "start": "yarn run build && NODE_ENV=development node dist/app.js",
         "serve": "tsc-watch --p ./tsconfig.app.json --onSuccess \"env NODE_ENV=development node dist/app.js\"",
-        "test": "jasmine --config=jasmine.json",
+        "test": "NODE_OPTIONS=--loader=ts-node/esm jasmine --config=jasmine.json",
+        "integration-test": "docker-compose up -d && NODE_OPTIONS=--loader=ts-node/esm jasmine --config=jasmine-integration.json ; docker-compose down",
         "coverage": "nyc yarn run test"
     },
     "dependencies": {
-        "@logion/node-api": "^0.8.0-2",
+        "@logion/node-api": "^0.10.1-2",
         "ansi-regex": "^6.0.1",
         "body-parser": "^1.19.1",
         "bson": "^4.6.1",
@@ -38,7 +39,7 @@
     },
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "^1.0.2",
-        "@tsconfig/node14": "^1.0.1",
+        "@tsconfig/node18": "^1.0.1",
         "@types/cors": "^2.8.12",
         "@types/express": "^4.17.13",
         "@types/jasmine": "^3.10.3",
@@ -46,24 +47,24 @@
         "@types/node": "^17.0.9",
         "@types/nodemailer": "^6.4.4",
         "@types/pug": "^2.0.6",
+        "@types/source-map-support": "^0.5.6",
         "@types/supertest": "^2.0.11",
         "@types/swagger-ui-express": "^4.1.3",
         "@types/uuid": "^8.3.4",
+        "axios": "^1.3.1",
         "jasmine": "^4.0.2",
         "jasmine-spec-reporter": "^7.0.0",
         "moq.ts": "^7.3.4",
         "nyc": "^15.1.0",
         "rimraf": "^3.0.2",
         "supertest": "^6.2.1",
-        "ts-node": "^10.4.0",
+        "ts-node": "^10.9.1",
         "tsc-watch": "^4.6.0",
-        "typescript": "^4.5.4"
+        "typescript": "^4.9.5"
     },
     "engines": {
-        "node": ">=14"
+        "node": ">=18"
     },
-    "resolutions": {
-        "node-fetch": "2.6.7"
-    },
-    "packageManager": "yarn@3.2.2"
+    "packageManager": "yarn@3.2.2",
+    "type": "module"
 }

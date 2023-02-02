@@ -2,13 +2,14 @@
 import express from 'express';
 import expressOasGenerator, { SPEC_OUTPUT_FILE_BEHAVIOR } from 'express-oas-generator';
 import dotenv from 'dotenv';
+import { install } from "source-map-support";
 
-import { Log } from "./util/Log";
-import { setupApp, predefinedSpec } from "./app.support";
+import { Log } from "./util/Log.js";
+import { setupApp, predefinedSpec } from "./app.support.js";
 
 const { logger } = Log;
 
-require('source-map-support').install();
+install();
 
 dotenv.config()
 

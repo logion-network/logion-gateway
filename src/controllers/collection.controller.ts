@@ -3,9 +3,9 @@ import { Controller, ApiController, Async, HttpPost, NotFoundException, HttpPut,
 import { OpenAPIV3 } from "express-oas-generator";
 import { DispatchError } from '@polkadot/types/interfaces/system/types';
 
-import { components } from "./components";
-import { addTag, setControllerTag, setPathParameters, getDefaultResponsesNoContent, getRequestBody, getBodyContent } from "./doc";
-import { LogionService } from "../services/logion.service";
+import { components } from "./components.js";
+import { addTag, setControllerTag, setPathParameters, getDefaultResponsesNoContent, getRequestBody, getBodyContent } from "./doc.js";
+import { LogionService } from "../services/logion.service.js";
 
 type CreateCollectionItemView = components["schemas"]["CreateCollectionItemView"];
 type GetCollectionItemView = components["schemas"]["GetCollectionItemView"];

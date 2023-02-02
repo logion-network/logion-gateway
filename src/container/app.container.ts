@@ -1,10 +1,10 @@
-import './inversify.decorate';
+import './inversify.decorate.js';
 import { Container } from 'inversify';
 
-import { JsonResponse } from '../middlewares/json.response';
-import { ApplicationErrorController } from '../controllers/application.error.controller';
-import { CollectionController } from '../controllers/collection.controller';
-import { LogionService } from '../services/logion.service';
+import { JsonResponse } from '../middlewares/json.response.js';
+import { ApplicationErrorController } from '../controllers/application.error.controller.js';
+import { CollectionController } from '../controllers/collection.controller.js';
+import { LogionService } from '../services/logion.service.js';
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(JsonResponse).toSelf();
