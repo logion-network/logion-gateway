@@ -18,7 +18,7 @@
         "coverage": "nyc yarn run test"
     },
     "dependencies": {
-        "@logion/node-api": "^0.10.1-2",
+        "@logion/node-api": "^0.10.1",
         "ansi-regex": "^6.0.1",
         "body-parser": "^1.19.1",
         "bson": "^4.6.1",
