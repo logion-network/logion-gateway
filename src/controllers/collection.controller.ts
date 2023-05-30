@@ -1,6 +1,7 @@
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpPost, NotFoundException, HttpPut, BadRequestException } from "dinoloop";
 import { OpenAPIV3 } from "express-oas-generator";
+import { Adapters, UUID } from "@logion/node-api";
 import { DispatchError } from '@polkadot/types/interfaces/system/types';
 
 import { components } from "./components.js";
@@ -61,8 +62,15 @@ export class CollectionController extends ApiController {
         try {
             await new Promise<void>(async (resolve, reject) => {
                 try {
-                    const unsub = await api.tx.logionLoc
-                    .addCollectionItem(collectionLocId, itemId, itemDescription, [], null, false)
+                    const unsub = await api.polkadot.tx.logionLoc
+                    .addCollectionItem(
+                        api.adapters.toLocId(new UUID(collectionLocId)),
+                        itemId,
+                        itemDescription,
+                        [],
+                        null,
+                        false
+                    )
                     .signAndSend(keyPair, (result) => {
                         if (result.status.isInBlock) {
                             unsub();
@@ -74,13 +82,14 @@ export class CollectionController extends ApiController {
                         }
                     });
                 } catch(error) {
+                    console.trace(error)
                     reject(error);
                 }
             });
         } catch(error) {
             if(error && typeof error === 'object' && 'isModule' in error) {
                 const dispatchError = error as DispatchError;
-                const metaError = this.logionService.buildErrorMetadata(api, dispatchError);
+                const metaError = Adapters.getErrorMetadata(dispatchError);
                 throw new BadRequestException(metaError);
             } else {
                 throw new BadRequestException({
@@ -88,7 +97,7 @@ export class CollectionController extends ApiController {
                 });
             }
         } finally {
-            await api.disconnect();
+            await api.polkadot.disconnect();
         }
     }
 
@@ -122,18 +131,18 @@ export class CollectionController extends ApiController {
 
         const api = await this.logionService.buildApi(url);
         try {
-            const item = await api.query.logionLoc.collectionItemsMap(collectionLocId, itemId);
-            if(item.isSome) {
+            const item = await api.queries.getCollectionItem(new UUID(collectionLocId), itemId);
+            if(item) {
                 return {
                     collectionLocId,
                     itemId,
-                    itemDescription: item.unwrap().description.toUtf8()
+                    itemDescription: item.description,
                 }
             } else {
                 throw new NotFoundException();
             }
         } finally {
-            await api.disconnect();
+            await api.polkadot.disconnect();
         }
     }
 }
