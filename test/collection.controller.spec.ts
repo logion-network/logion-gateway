@@ -1,13 +1,15 @@
 import { Container } from "inversify";
 import request from "supertest";
-import { Mock } from "moq.ts";
+import { It, Mock } from "moq.ts";
 import { ApiPromise } from "@polkadot/api";
 import type { IKeyringPair } from '@polkadot/types/types';
 import { DispatchError } from '@polkadot/types/interfaces/system/types';
+import { Compact, u128 } from "@polkadot/types-codec";
 
 import { setupApp } from "./testapp.js";
 import { CollectionController } from "../src/controllers/collection.controller.js";
 import { LogionService } from "../src/services/logion.service.js";
+import { LogionNodeApiClass, UUID } from "@logion/node-api";
 
 const expectedWebSocketUrl = "ws://localhost:9944";
 const expectedCollectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
@@ -109,11 +111,11 @@ function mockForAdd(container: Container): void {
     const apiMock: unknown = {
         tx: {
             logionLoc: {
-                addCollectionItem: (collectionLocId: string, itemId: string, itemDescription: string) => ({
+                addCollectionItem: (collectionLocId: { toString: () => string }, itemId: string, itemDescription: string) => ({
                     signAndSend: (keypair: any, callback: (result: any) => void): Promise<() => void> => {
                         return new Promise((resolve, reject) => {
                             if(keypair
-                                    && collectionLocId === expectedCollectionLocId
+                                    && collectionLocId.toString() === expectedCollectionLocId
                                     && itemId === expectedItemId
                                     && itemDescription === expectedDescription) {
                                 resolve(() => {});
@@ -123,7 +125,7 @@ function mockForAdd(container: Container): void {
                                     }
                                 }));
                             } else {
-                                reject();
+                                reject("unexpected input");
                             }
                         });
                     }
@@ -132,17 +134,35 @@ function mockForAdd(container: Container): void {
         },
         disconnect: () => {}
     };
+    const apiClassMock = new Mock<LogionNodeApiClass>();
+    apiClassMock.setup(instance => instance.polkadot).returns(apiMock as ApiPromise);
+    const locId = new Mock<Compact<u128>>();
+    locId.setup(instance => instance.toString()).returns(expectedCollectionLocId);
+    apiClassMock.setup(instance => instance.adapters.toLocId(It.Is<UUID>(uuid => uuid.toString() === expectedCollectionLocId))).returns(locId.object());
+    
     const logionService = new Mock<LogionService>();
-    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiMock as ApiPromise));
+    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiClassMock.object()));
 
     const keyPair = new Mock<IKeyringPair>();
     logionService.setup(instance => instance.buildKeyringPair(expectedSuri)).returns(keyPair.object());
+
     container.bind(LogionService).toConstantValue(logionService.object());
 }
 
 function mockForDispatchError(container: Container): void {
     const dispatchError: unknown = {
-        isModule: true
+        isModule: true,
+        asModule: {
+            index: 42,
+            error: 42,
+        },
+        registry: {
+            findMetaError: () => ({
+                section: expectedError.pallet,
+                name: expectedError.error,
+                docs: [expectedError.details],
+            })
+        },
     };
     const apiMock: unknown = {
         tx: {
@@ -151,7 +171,7 @@ function mockForDispatchError(container: Container): void {
                     signAndSend: (keypair: any, callback: (result: any) => void): Promise<() => void> => {
                         return new Promise((resolve, reject) => {
                             if(keypair
-                                    && collectionLocId === expectedCollectionLocId
+                                    && collectionLocId.toString() === expectedCollectionLocId
                                     && itemId === expectedItemId
                                     && itemDescription === expectedDescription) {
                                 resolve(() => {});
@@ -162,7 +182,7 @@ function mockForDispatchError(container: Container): void {
                                     dispatchError
                                 }));
                             } else {
-                                reject();
+                                reject("unexpected input");
                             }
                         });
                     }
@@ -171,15 +191,19 @@ function mockForDispatchError(container: Container): void {
         },
         disconnect: () => {}
     };
+    const apiClassMock = new Mock<LogionNodeApiClass>();
+    apiClassMock.setup(instance => instance.polkadot).returns(apiMock as ApiPromise);
+    const locId = new Mock<Compact<u128>>();
+    locId.setup(instance => instance.toString()).returns(expectedCollectionLocId);
+    apiClassMock.setup(instance => instance.adapters.toLocId(It.Is<UUID>(uuid => uuid.toString() === expectedCollectionLocId))).returns(locId.object());
+    
     const logionService = new Mock<LogionService>();
-    container.bind(LogionService).toConstantValue(logionService.object());
-
-    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiMock as ApiPromise));
+    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiClassMock.object()));
 
     const keyPair = new Mock<IKeyringPair>();
     logionService.setup(instance => instance.buildKeyringPair(expectedSuri)).returns(keyPair.object());
 
-    logionService.setup(instance => instance.buildErrorMetadata(apiMock as ApiPromise, dispatchError as DispatchError)).returns(expectedError);
+    container.bind(LogionService).toConstantValue(logionService.object());
 }
 
 function mockForSubmitError(container: Container): void {
@@ -190,7 +214,7 @@ function mockForSubmitError(container: Container): void {
                     signAndSend: (keypair: any, _callback: (result: any) => void): Promise<() => void> => {
                         return new Promise((resolve, reject) => {
                             if(keypair
-                                    && collectionLocId === expectedCollectionLocId
+                                    && collectionLocId.toString() === expectedCollectionLocId
                                     && itemId === expectedItemId
                                     && itemDescription === expectedDescription) {
                                 reject("error");
@@ -204,42 +228,40 @@ function mockForSubmitError(container: Container): void {
         },
         disconnect: () => {}
     };
+    const apiClassMock = new Mock<LogionNodeApiClass>();
+    apiClassMock.setup(instance => instance.polkadot).returns(apiMock as ApiPromise);
+    const locId = new Mock<Compact<u128>>();
+    locId.setup(instance => instance.toString()).returns(expectedCollectionLocId);
+    apiClassMock.setup(instance => instance.adapters.toLocId(It.Is<UUID>(uuid => uuid.toString() === expectedCollectionLocId))).returns(locId.object());
+    
     const logionService = new Mock<LogionService>();
-    container.bind(LogionService).toConstantValue(logionService.object());
-
-    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiMock as ApiPromise));
+    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiClassMock.object()));
 
     const keyPair = new Mock<IKeyringPair>();
     logionService.setup(instance => instance.buildKeyringPair(expectedSuri)).returns(keyPair.object());
+
+    container.bind(LogionService).toConstantValue(logionService.object());
 }
 
 function mockForCheck(container: Container): void {
     const apiMock: unknown = {
-        query: {
-            logionLoc: {
-                collectionItemsMap: (collectionLocId: string, itemId: string) => {
-                    if(collectionLocId === expectedCollectionLocId
-                        && itemId === expectedItemId) {
-                        return {
-                            isSome: true,
-                            unwrap: () => ({
-                                description: {
-                                    toUtf8: () => "Some description"
-                                }
-                            })
-                        }
-                    } else {
-                        return {
-                            isSome: false,
-                            unwrap: () => { throw new Error() }
-                        }
-                    }
-                }
-            }
-        },
         disconnect: () => {}
     };
+    const apiClassMock = new Mock<LogionNodeApiClass>();
+    apiClassMock.setup(instance => instance.polkadot).returns(apiMock as ApiPromise);
+    const locId = new Mock<Compact<u128>>();
+    locId.setup(instance => instance.toString()).returns(expectedCollectionLocId);
+    apiClassMock.setup(instance => instance.adapters.toLocId(It.Is<UUID>(uuid => uuid.toString() === expectedCollectionLocId))).returns(locId.object());
+    apiClassMock.setup(instance => instance.queries.getCollectionItem(It.Is<UUID>(uuid => uuid.toString() === expectedCollectionLocId), expectedItemId)).returnsAsync({
+        id: expectedItemId,
+        description: expectedDescription,
+        files: [],
+        restrictedDelivery: false,
+        termsAndConditions: [],
+    });
+    
     const logionService = new Mock<LogionService>();
-    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiMock as ApiPromise));
+    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiClassMock.object()));
+
     container.bind(LogionService).toConstantValue(logionService.object());
 }
