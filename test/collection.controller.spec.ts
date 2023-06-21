@@ -3,7 +3,6 @@ import request from "supertest";
 import { It, Mock } from "moq.ts";
 import { ApiPromise } from "@polkadot/api";
 import type { IKeyringPair } from '@polkadot/types/types';
-import { DispatchError } from '@polkadot/types/interfaces/system/types';
 import { Compact, u128 } from "@polkadot/types-codec";
 
 import { setupApp } from "./testapp.js";

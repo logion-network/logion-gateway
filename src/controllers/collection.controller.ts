@@ -55,6 +55,11 @@ export class CollectionController extends ApiController {
         const suri = body.suri!;
         const itemId = body.itemId!;
         const itemDescription = body.itemDescription!;
+        const locId = UUID.fromAnyString(collectionLocId);
+
+        if(!locId) {
+            throw new BadRequestException({ details: "Collection LOC ID is not a valid UUID" });
+        }
 
         const api = await this.logionService.buildApi(url);
         const keyPair = this.logionService.buildKeyringPair(suri);
@@ -64,12 +69,14 @@ export class CollectionController extends ApiController {
                 try {
                     const unsub = await api.polkadot.tx.logionLoc
                     .addCollectionItem(
-                        api.adapters.toLocId(new UUID(collectionLocId)),
+                        api.adapters.toLocId(locId),
                         itemId,
                         itemDescription,
                         [],
                         null,
-                        false
+                        false,
+                        [],
+                        0,
                     )
                     .signAndSend(keyPair, (result) => {
                         if (result.status.isInBlock) {
@@ -128,10 +135,18 @@ export class CollectionController extends ApiController {
     @Async()
     async getCollectionItem(body: GetCollectionItemView, collectionLocId: string, itemId: string): Promise<CollectionItemView> {
         const url = body.webSocketUrl!;
+        const locId = UUID.fromAnyString(collectionLocId);
+
+        if(!locId) {
+            throw new BadRequestException({ details: "Collection LOC ID is not a valid UUID" });
+        }
 
         const api = await this.logionService.buildApi(url);
         try {
-            const item = await api.queries.getCollectionItem(new UUID(collectionLocId), itemId);
+            const item = await api.queries.getCollectionItem(
+                locId,
+                itemId
+            );
             if(item) {
                 return {
                     collectionLocId,

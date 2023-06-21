@@ -3,7 +3,7 @@ import { KeyringPair } from "@polkadot/keyring/types";
 import { IKeyringPair, ISubmittableResult } from "@polkadot/types/types";
 import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
 import { waitReady } from "@polkadot/wasm-crypto";
-import { ATTO, buildApi, LogionNodeApi, NONE, PrefixedNumber, UUID } from "@logion/node-api";
+import { buildApiClass, LogionNodeApiClass, UUID, Currency, Adapters } from "@logion/node-api";
 import axios from "axios";
 
 describe("Gateway", () => {
@@ -13,19 +13,27 @@ describe("Gateway", () => {
 
         const itemId = "0x5fa4160170ad053c261d3e441e4b10105463f44690c3749ab78846cb1bfe7659";
         const itemDescription = "Some description.";
-        await axios.post(`http://localhost:8080/api/collection/${collectionLocId.toDecimalString()}`, {
-            webSocketUrl: "ws://node:9944",
-            suri: REQUESTER_SECRET_SEED,
-            itemId,
-            itemDescription,
-        });
+        try {
+            await axios.post(`http://localhost:8080/api/collection/${collectionLocId.toDecimalString()}`, {
+                webSocketUrl: "ws://node:9944",
+                suri: REQUESTER_SECRET_SEED,
+                itemId,
+                itemDescription,
+            });
 
-        const response = await axios.put(`http://localhost:8080/api/collection/${collectionLocId.toDecimalString()}/${itemId}`, {
-            webSocketUrl: "ws://node:9944",
-        });
-        expect(response.data.collectionLocId).toBe(collectionLocId.toDecimalString());
-        expect(response.data.itemId).toBe(itemId);
-        expect(response.data.itemDescription).toBe(itemDescription);
+            const response = await axios.put(`http://localhost:8080/api/collection/${collectionLocId.toDecimalString()}/${itemId}`, {
+                webSocketUrl: "ws://node:9944",
+            });
+            expect(response.data.collectionLocId).toBe(collectionLocId.toDecimalString());
+            expect(response.data.itemId).toBe(itemId);
+            expect(response.data.itemDescription).toBe(itemDescription);
+        } catch(e: any) {
+            if("response" in e && "data" in e.response && "details" in e.response.data) {
+                throw new Error(e.response.data.details);
+            } else {
+                throw e;
+            }
+        }
     });
 
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 300000;
@@ -34,7 +42,7 @@ describe("Gateway", () => {
 let keyring: Keyring;
 let alice: KeyringPair;
 let requester: KeyringPair;
-let api: LogionNodeApi;
+let api: LogionNodeApiClass;
 let collectionLocId: UUID;
 
 async function setup(): Promise<void> {
@@ -42,17 +50,26 @@ async function setup(): Promise<void> {
     keyring = new Keyring({ type: 'sr25519' });
     alice = keyring.addFromUri(ALICE_SEED);
     requester = keyring.addFromUri(REQUESTER_SECRET_SEED);
-    api = await buildApi("ws://127.0.0.1:9944");
+    api = await buildApiClass("ws://127.0.0.1:9944");
+
+    const amount = Currency.toCanonicalAmount(Currency.nLgnt(5000n));
+    const sendMoneyToRequester = api.polkadot.tx.balances.transfer(REQUESTER, amount);
+    await signAndSend(alice, sendMoneyToRequester);
 
     collectionLocId = new UUID();
-    const createCollectionLoc = api.tx.logionLoc.createCollectionLoc(collectionLocId.toDecimalString(), REQUESTER, null, 200, false);
-    await signAndSend(alice, createCollectionLoc);
+    const createCollectionLoc = api.polkadot.tx.logionLoc.createCollectionLoc(
+        Adapters.toLocId(collectionLocId),
+        ALICE,
+        null,
+        200,
+        false,
+    );
+    await signAndSend(requester, createCollectionLoc);
 
-    const closeCollectionLoc = api.tx.logionLoc.close(collectionLocId.toDecimalString());
+    const closeCollectionLoc = api.polkadot.tx.logionLoc.close(
+        Adapters.toLocId(collectionLocId),
+    );
     await signAndSend(alice, closeCollectionLoc);
-
-    const sendMoneyToRequester = api.tx.balances.transfer(REQUESTER, new PrefixedNumber("1", NONE).convertTo(ATTO).coefficient.toInteger());
-    await signAndSend(alice, sendMoneyToRequester);
 }
 
 const ALICE_SEED = "0xe5be9a5092b81bca64be81d212e7f2f9eba183bb7a90954f7b76361f6edb5c0a";
@@ -69,11 +86,11 @@ function signAndSend(keypair: IKeyringPair, extrinsic: SubmittableExtrinsic): Pr
         extrinsic.signAndSend(keypair, (result) => {
             if(result.isError) {
                 unsub();
-                error(result.dispatchError);
+                error(new Error("pre-dispatch error"));
             } else if (result.status.isInBlock) {
                 unsub();
                 if(result.dispatchError) {
-                    error(result.dispatchError);
+                    error(new Error(Adapters.getErrorMessage(result.dispatchError)));
                 } else {
                     resolve(result);
                 }
