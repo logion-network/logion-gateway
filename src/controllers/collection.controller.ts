@@ -76,7 +76,6 @@ export class CollectionController extends ApiController {
                         null,
                         false,
                         [],
-                        0,
                     )
                     .signAndSend(keyPair, (result) => {
                         if (result.status.isInBlock) {
