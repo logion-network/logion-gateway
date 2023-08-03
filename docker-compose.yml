@@ -1,14 +1,55 @@
 version: "3.6"
 services:
+  private-database:
+    image: logionnetwork/logion-postgres:${PG_TAG:-latest}
+    environment:
+      - POSTGRES_PASSWORD=secret
   node:
     image: logionnetwork/logion-node:latest
     ports:
-      - 9944:9944
+      - 127.0.0.1:9944:9944
     environment:
       - CHAIN_SPEC=dev
       - NODE_KEY=c12b6d18942f5ee8528c8e2baf4e147b5c5c18710926ea492d09cbd9f6c9f82a
       - CUSTOM_OPTIONS=--alice --rpc-external --rpc-cors all
+  backend:
+    image: logionnetwork/logion-backend:${BACKEND_TAG:-latest}
+    ports:
+      - 127.0.0.1:8070:8080
+    environment:
+      - JWT_SECRET=c12b6d18942f5ee8528c8e2baf4e147b5c5c18710926ea492d09cbd9f6c9f82a
+      - JWT_ISSUER=12D3KooWBmAwcd4PJNJvfV89HwE48nwkRmAgo8Vy3uQEyNNHBox2
+      - TYPEORM_HOST=private-database
+      - WS_PROVIDER_URL=ws://node:9944
+      - OWNER=5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+      - DIRECTORY_URL=http://directory:8080
+      - SMTP_ENABLED=false
+      - IPFS_CLUSTER_HOST=/dns4/ipfs-cluster1/tcp/9094
+      - IPFS_HOST=/dns4/ipfs1/tcp/5001
+      - IPFS_MIN_REPLICA=1
+      - IPFS_MAX_REPLICA=2
+      - ENC_PASSWORD=secret
+      - FEATURE_VOTE=true
+    depends_on:
+      - node
+      - private-database
+  directory-database:
+    image: postgres:12
+    environment:
+      - POSTGRES_PASSWORD=secret
+  directory:
+    image: logionnetwork/logion-directory:${DIRECTORY_TAG:-latest}
+    ports:
+      - 127.0.0.1:8090:8080
+    environment:
+      - JWT_SECRET=c12b6d18942f5ee8528c8e2baf4e147b5c5c18710926ea492d09cbd9f6c9f82a
+      - JWT_ISSUER=12D3KooWBmAwcd4PJNJvfV89HwE48nwkRmAgo8Vy3uQEyNNHBox2
+      - WS_PROVIDER_URL=ws://node:9944
+      - TYPEORM_HOST=directory-database
+    depends_on:
+      - node
+      - directory-database
   gateway:
     image: logionnetwork/logion-gateway:latest
     ports:
-      - 8080:8080
+      - 127.0.0.1:8080:8080

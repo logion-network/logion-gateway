@@ -9,6 +9,7 @@ export interface components {
   schemas: {
     CreateCollectionItemView: {
       webSocketUrl?: components["schemas"]["WebSocketUrl"];
+      directoryUrl?: components["schemas"]["DirectoryUrl"];
       /**
        * @description The secret seed of collection's requester. May be provided in the mnemonic or hexadecimal form.
        * @example used route main sock exotic mule screen whale dance tail ladder lift
@@ -19,12 +20,18 @@ export interface components {
     };
     GetCollectionItemView: {
       webSocketUrl?: components["schemas"]["WebSocketUrl"];
+      directoryUrl?: components["schemas"]["DirectoryUrl"];
     };
     /**
      * @description The WebSocket endpoint of a logion chain
      * @example wss://test-rpc01.logion.network
      */
     WebSocketUrl: string;
+    /**
+     * @description The LLO directory
+     * @example https://test-directory.logion.network
+     */
+    DirectoryUrl: string;
     /**
      * @description The unique identifier of the item in the collection e.g. the hex representation of a file's SHA256 hash.
      * @example 0xc3e49c87aa19ec987501fc2e207f5928bd31ee948f69455c733416564da158c5

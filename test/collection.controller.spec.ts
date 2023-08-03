@@ -1,25 +1,24 @@
 import { Container } from "inversify";
 import request from "supertest";
 import { It, Mock } from "moq.ts";
-import { ApiPromise } from "@polkadot/api";
-import type { IKeyringPair } from '@polkadot/types/types';
-import { Compact, u128 } from "@polkadot/types-codec";
+import { Keyring } from "@polkadot/api";
+import type { KeyringPair } from '@polkadot/keyring/types.js';
 
 import { setupApp } from "./testapp.js";
 import { CollectionController } from "../src/controllers/collection.controller.js";
 import { LogionService } from "../src/services/logion.service.js";
-import { LogionNodeApiClass, UUID } from "@logion/node-api";
+import { LogionNodeApiClass, UUID, Hash, ValidAccountId, LegalOfficerCase } from "@logion/node-api";
+import { AddCollectionItemParams, ClosedCollectionLoc, FetchAllLocsParams, LocsState, LogionClient, LogionClientConfig, CollectionItem, HashString } from "@logion/client";
 
 const expectedWebSocketUrl = "ws://localhost:9944";
+const expectedDirectoryUrl = "http://localhost:8090";
 const expectedCollectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
-const expectedItemId = "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705";
+const expectedItemId = Hash.fromHex("0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705");
 const expectedSuri = "0x123456789abcdf";
+const expectedRequester = "5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb";
+const expectedOwner = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
 const expectedDescription = "Some description";
-const expectedError = {
-    pallet: "logionLoc",
-    error: "CollectionItemAlreadyExists",
-    details: "An item with same identifier already exists in the collection"
-};
+const expectedError = "Expected error";
 
 describe("CollectionController", () => {
 
@@ -28,239 +27,171 @@ describe("CollectionController", () => {
         const app = setupApp(CollectionController, mockForAdd);
 
         await request(app)
-            .post(`/api/collection/${expectedCollectionLocId}`)
+            .post(`/api/collection/${ expectedCollectionLocId }`)
             .send({
                 webSocketUrl: expectedWebSocketUrl,
+                directoryUrl: expectedDirectoryUrl,
                 suri: expectedSuri,
-                itemId: expectedItemId,
+                itemId: expectedItemId.toHex(),
                 itemDescription: expectedDescription
             })
             .expect(200);
     })
 
-    it("returns error in case of dispatch failure", async () => {
+    it("returns error in case of add failure", async () => {
 
-        const app = setupApp(CollectionController, mockForDispatchError);
+        const app = setupApp(CollectionController, mockForError);
 
         await request(app)
-            .post(`/api/collection/${expectedCollectionLocId}`)
+            .post(`/api/collection/${ expectedCollectionLocId }`)
             .send({
                 webSocketUrl: expectedWebSocketUrl,
+                directoryUrl: expectedDirectoryUrl,
                 suri: expectedSuri,
-                itemId: expectedItemId,
+                itemId: expectedItemId.toHex(),
                 itemDescription: expectedDescription
             })
             .expect(400)
             .then(response => {
-                expect(response.body).toEqual(expectedError)
-            });
-    })
-
-    it("returns error in case of submit failure", async () => {
-
-        const app = setupApp(CollectionController, mockForSubmitError);
-
-        await request(app)
-            .post(`/api/collection/${expectedCollectionLocId}`)
-            .send({
-                webSocketUrl: expectedWebSocketUrl,
-                suri: expectedSuri,
-                itemId: expectedItemId,
-                itemDescription: expectedDescription
-            })
-            .expect(400)
-            .then(response => {
-                expect(response.body.pallet).toBeUndefined();
-                expect(response.body.error).toBeUndefined();
-                expect(response.body.details).toBe("error");
+                expect(response.body.details).toEqual(expectedError)
             });
     })
 
     it("gets an existing collection item", async () => {
 
-        const app = setupApp(CollectionController, mockForCheck);
+        const app = setupApp(CollectionController, mockForGet);
 
         await request(app)
-            .put(`/api/collection/${expectedCollectionLocId}/${expectedItemId}`)
+            .put(`/api/collection/${ expectedCollectionLocId }/${ expectedItemId.toHex() }`)
             .send({
-                webSocketUrl: expectedWebSocketUrl
+                webSocketUrl: expectedWebSocketUrl,
+                directoryUrl: expectedDirectoryUrl,
             })
             .expect(200)
             .then(response => {
                 expect(response.body.collectionLocId).toEqual(expectedCollectionLocId)
-                expect(response.body.itemId).toEqual(expectedItemId)
+                expect(response.body.itemId).toEqual(expectedItemId.toHex())
                 expect(response.body.itemDescription).toEqual(expectedDescription)
             });
     })
 
     it("gets not found when requesting non-existent collection item", async () => {
 
-        const app = setupApp(CollectionController, mockForCheck);
+        const app = setupApp(CollectionController, mockForGet);
 
         await request(app)
-            .put(`/api/collection/${expectedCollectionLocId}/0x12345`)
+            .put(`/api/collection/${ expectedCollectionLocId }/${ Hash.of("unknown-item").toHex() }`)
             .send({
-                webSocketUrl: expectedWebSocketUrl
+                webSocketUrl: expectedWebSocketUrl,
+                directoryUrl: expectedDirectoryUrl,
             })
             .expect(404);
     })
 })
 
 function mockForAdd(container: Container): void {
-    const apiMock: unknown = {
-        tx: {
-            logionLoc: {
-                addCollectionItem: (collectionLocId: { toString: () => string }, itemId: string, itemDescription: string) => ({
-                    signAndSend: (keypair: any, callback: (result: any) => void): Promise<() => void> => {
-                        return new Promise((resolve, reject) => {
-                            if(keypair
-                                    && collectionLocId.toString() === expectedCollectionLocId
-                                    && itemId === expectedItemId
-                                    && itemDescription === expectedDescription) {
-                                resolve(() => {});
-                                setTimeout(() => callback({
-                                    status: {
-                                        isInBlock: true
-                                    }
-                                }));
-                            } else {
-                                reject("unexpected input");
-                            }
-                        });
-                    }
-                })
-            }
-        },
-        disconnect: () => {}
-    };
-    const apiClassMock = new Mock<LogionNodeApiClass>();
-    apiClassMock.setup(instance => instance.polkadot).returns(apiMock as ApiPromise);
-    const locId = new Mock<Compact<u128>>();
-    locId.setup(instance => instance.toString()).returns(expectedCollectionLocId);
-    apiClassMock.setup(instance => instance.adapters.toLocId(It.Is<UUID>(uuid => uuid.toString() === expectedCollectionLocId))).returns(locId.object());
-    
-    const logionService = new Mock<LogionService>();
-    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiClassMock.object()));
+    const { client, keyring, accountId, locState } = mockLogionService(container);
 
-    const keyPair = new Mock<IKeyringPair>();
-    logionService.setup(instance => instance.buildKeyringPair(expectedSuri)).returns(keyPair.object());
+    const keypair = new Mock<KeyringPair>();
+    keypair.setup(instance => instance.address).returns(expectedRequester);
+    keyring.setup(instance => instance.getPairs()).returns([ keypair.object() ]);
 
-    container.bind(LogionService).toConstantValue(logionService.object());
+    locState.setup(instance => instance.addCollectionItem(ItIsExpectedAddItemParams())).returnsAsync(locState.object());
+
+    client.setup(instance => instance.withCurrentAddress(accountId.object())).returns(client.object());
+    client.setup(instance => instance.authenticate(It.IsAny(), It.IsAny())).returnsAsync(client.object());
 }
 
-function mockForDispatchError(container: Container): void {
-    const dispatchError: unknown = {
-        isModule: true,
-        asModule: {
-            index: 42,
-            error: 42,
-        },
-        registry: {
-            findMetaError: () => ({
-                section: expectedError.pallet,
-                name: expectedError.error,
-                docs: [expectedError.details],
-            })
-        },
-    };
-    const apiMock: unknown = {
-        tx: {
-            logionLoc: {
-                addCollectionItem: (collectionLocId: string, itemId: string, itemDescription: string) => ({
-                    signAndSend: (keypair: any, callback: (result: any) => void): Promise<() => void> => {
-                        return new Promise((resolve, reject) => {
-                            if(keypair
-                                    && collectionLocId.toString() === expectedCollectionLocId
-                                    && itemId === expectedItemId
-                                    && itemDescription === expectedDescription) {
-                                resolve(() => {});
-                                setTimeout(() => callback({
-                                    status: {
-                                        isInBlock: true
-                                    },
-                                    dispatchError
-                                }));
-                            } else {
-                                reject("unexpected input");
-                            }
-                        });
-                    }
-                })
-            }
-        },
-        disconnect: () => {}
-    };
-    const apiClassMock = new Mock<LogionNodeApiClass>();
-    apiClassMock.setup(instance => instance.polkadot).returns(apiMock as ApiPromise);
-    const locId = new Mock<Compact<u128>>();
-    locId.setup(instance => instance.toString()).returns(expectedCollectionLocId);
-    apiClassMock.setup(instance => instance.adapters.toLocId(It.Is<UUID>(uuid => uuid.toString() === expectedCollectionLocId))).returns(locId.object());
-    
-    const logionService = new Mock<LogionService>();
-    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiClassMock.object()));
+function mockLogionService(container: Container): {
+    nodeApi: Mock<LogionNodeApiClass>,
+    client: Mock<LogionClient>,
+    keyring: Mock<Keyring>,
+    accountId: Mock<ValidAccountId>,
+    locState: Mock<ClosedCollectionLoc>,
+} {
+    const nodeApi = new Mock<LogionNodeApiClass>();
 
-    const keyPair = new Mock<IKeyringPair>();
-    logionService.setup(instance => instance.buildKeyringPair(expectedSuri)).returns(keyPair.object());
+    const client = new Mock<LogionClient>();
+    client.setup(instance => instance.logionApi).returns(nodeApi.object());
+    client.setup(instance => instance.disconnect()).returnsAsync();
+
+    const accountId = new Mock<ValidAccountId>();
+    accountId.setup(instance => instance.address).returns(expectedRequester);
+    nodeApi.setup(instance => instance.queries.getValidAccountId(expectedRequester, "Polkadot")).returns(accountId.object());
+
+    const loc = new Mock<LegalOfficerCase>();
+    loc.setup(instance => instance.requesterAddress).returns(accountId.object());
+    loc.setup(instance => instance.owner).returns(expectedOwner);
+    nodeApi.setup(instance => instance.queries.getLegalOfficerCase(ItIsExpectedLocId())).returnsAsync(loc.object());
+
+    const locState = new Mock<ClosedCollectionLoc>();
+
+    const locs = new Mock<LocsState>();
+    locs.setup(instance => instance.findById(ItIsExpectedLocId())).returns(locState.prototypeof(ClosedCollectionLoc.prototype).object());
+    client.setup(instance => instance.locsState(ItIsExpectedLocsSpec())).returnsAsync(locs.object());
+
+    const logionService = new Mock<LogionService>();
+    logionService.setup(instance => instance.buildApi(IsExpectedConfig())).returns(Promise.resolve(client.object()));
+
+    const keyring = new Mock<Keyring>();
+    logionService.setup(instance => instance.buildKeyring(expectedSuri)).returns(keyring.object());
 
     container.bind(LogionService).toConstantValue(logionService.object());
+
+    return { nodeApi, client, keyring, accountId, locState };
 }
 
-function mockForSubmitError(container: Container): void {
-    const apiMock: unknown = {
-        tx: {
-            logionLoc: {
-                addCollectionItem: (collectionLocId: string, itemId: string, itemDescription: string) => ({
-                    signAndSend: (keypair: any, _callback: (result: any) => void): Promise<() => void> => {
-                        return new Promise((resolve, reject) => {
-                            if(keypair
-                                    && collectionLocId.toString() === expectedCollectionLocId
-                                    && itemId === expectedItemId
-                                    && itemDescription === expectedDescription) {
-                                reject("error");
-                            } else {
-                                resolve(() => {});
-                            }
-                        });
-                    }
-                })
-            }
-        },
-        disconnect: () => {}
-    };
-    const apiClassMock = new Mock<LogionNodeApiClass>();
-    apiClassMock.setup(instance => instance.polkadot).returns(apiMock as ApiPromise);
-    const locId = new Mock<Compact<u128>>();
-    locId.setup(instance => instance.toString()).returns(expectedCollectionLocId);
-    apiClassMock.setup(instance => instance.adapters.toLocId(It.Is<UUID>(uuid => uuid.toString() === expectedCollectionLocId))).returns(locId.object());
-    
-    const logionService = new Mock<LogionService>();
-    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiClassMock.object()));
-
-    const keyPair = new Mock<IKeyringPair>();
-    logionService.setup(instance => instance.buildKeyringPair(expectedSuri)).returns(keyPair.object());
-
-    container.bind(LogionService).toConstantValue(logionService.object());
+function IsExpectedConfig() {
+    return It.Is<LogionClientConfig>(config =>
+        config.directoryEndpoint === expectedDirectoryUrl
+        && config.rpcEndpoints[0] === expectedWebSocketUrl
+    );
 }
 
-function mockForCheck(container: Container): void {
-    const apiMock: unknown = {
-        disconnect: () => {}
-    };
-    const apiClassMock = new Mock<LogionNodeApiClass>();
-    apiClassMock.setup(instance => instance.polkadot).returns(apiMock as ApiPromise);
-    const locId = new Mock<Compact<u128>>();
-    locId.setup(instance => instance.toString()).returns(expectedCollectionLocId);
-    apiClassMock.setup(instance => instance.adapters.toLocId(It.Is<UUID>(uuid => uuid.toString() === expectedCollectionLocId))).returns(locId.object());
-    apiClassMock.setup(instance => instance.queries.getCollectionItem(It.Is<UUID>(uuid => uuid.toString() === expectedCollectionLocId), expectedItemId)).returnsAsync({
-        id: expectedItemId,
-        description: expectedDescription,
-        files: [],
-        restrictedDelivery: false,
-        termsAndConditions: [],
-    });
-    
-    const logionService = new Mock<LogionService>();
-    logionService.setup(instance => instance.buildApi(expectedWebSocketUrl)).returns(Promise.resolve(apiClassMock.object()));
+function ItIsExpectedLocId() {
+    return It.Is<UUID>(locId => locId.toString() === expectedCollectionLocId);
+}
 
-    container.bind(LogionService).toConstantValue(logionService.object());
+function ItIsExpectedLocsSpec() {
+    return It.Is<FetchAllLocsParams>(params =>
+        params.spec?.locTypes.length === 1
+        && params.spec?.locTypes[0] === "Collection"
+        && params.spec?.statuses.length === 1
+        && params.spec?.statuses[0] === "CLOSED"
+        && params.spec.ownerAddress === expectedOwner
+        && params.spec.requesterAddress === expectedRequester
+    );
+}
+
+function ItIsExpectedAddItemParams() {
+    return It.Is<AddCollectionItemParams>(params =>
+        params.itemId.equalTo(expectedItemId)
+        && params.itemDescription === expectedDescription
+    );
+}
+
+function mockForError(container: Container): void {
+    const { client, keyring, locState, accountId } = mockLogionService(container);
+
+    const keypair = new Mock<KeyringPair>();
+    keypair.setup(instance => instance.address).returns(expectedRequester);
+    keyring.setup(instance => instance.getPairs()).returns([ keypair.object() ]);
+
+    locState.setup(instance => instance.addCollectionItem)
+        .returns(_ => Promise.reject(new Error(expectedError)));
+
+    client.setup(instance => instance.withCurrentAddress(accountId.object())).returns(client.object());
+    client.setup(instance => instance.authenticate(It.IsAny(), It.IsAny())).returnsAsync(client.object());
+}
+
+function mockForGet(container: Container): void {
+    const { client } = mockLogionService(container);
+
+    const item = new Mock<CollectionItem>();
+    item.setup(instance => instance.description).returns(HashString.fromValue(expectedDescription));
+    client.setup(instance => instance.public.findCollectionLocItemById(
+        It.Is<{ locId: UUID, itemId: Hash}>(params =>
+            params.itemId.equalTo(expectedItemId)
+            && params.locId.toString() === expectedCollectionLocId
+    ))).returnsAsync(item.object());
 }

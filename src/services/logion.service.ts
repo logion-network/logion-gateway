@@ -1,17 +1,21 @@
 import { injectable } from "inversify";
 import { Keyring } from '@polkadot/api';
-import type { IKeyringPair } from '@polkadot/types/types';
-import { buildApiClass, LogionNodeApiClass } from '@logion/node-api';
+import { LogionClient, LogionClientConfig } from '@logion/client';
+import FormData from "form-data";
 
 @injectable()
 export class LogionService {
 
-    async buildApi(url: string): Promise<LogionNodeApiClass> {
-        return await buildApiClass(url);
+    async buildApi(config: LogionClientConfig): Promise<LogionClient> {
+        return await LogionClient.create({
+            ...config,
+            formDataLikeFactory: () => new FormData(),
+        });
     }
 
-    buildKeyringPair(suri: string): IKeyringPair {
+    buildKeyring(suri: string): Keyring {
         const keyring = new Keyring({ type: 'sr25519' });
-        return keyring.addFromUri(suri);
+        keyring.addFromUri(suri);
+        return keyring;
     }
 }
