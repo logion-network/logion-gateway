@@ -13,6 +13,9 @@
                     "webSocketUrl": {
                         "$ref": "#/components/schemas/WebSocketUrl"
                     },
+                    "directoryUrl": {
+                        "$ref": "#/components/schemas/DirectoryUrl"
+                    },
                     "suri": {
                         "type": "string",
                         "example": "used route main sock exotic mule screen whale dance tail ladder lift",
@@ -31,6 +34,9 @@
                 "properties": {
                     "webSocketUrl": {
                         "$ref": "#/components/schemas/WebSocketUrl"
+                    },
+                    "directoryUrl": {
+                        "$ref": "#/components/schemas/DirectoryUrl"
                     }
                 }
             },
@@ -38,6 +44,11 @@
                 "type": "string",
                 "example": "wss://test-rpc01.logion.network",
                 "description": "The WebSocket endpoint of a logion chain"
+            },
+            "DirectoryUrl": {
+                "type": "string",
+                "example": "https://test-directory.logion.network",
+                "description": "The LLO directory"
             },
             "ItemId": {
                 "type": "string",

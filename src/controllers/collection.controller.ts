@@ -1,12 +1,12 @@
 import { injectable } from "inversify";
-import { Controller, ApiController, Async, HttpPost, NotFoundException, HttpPut, BadRequestException } from "dinoloop";
+import { Controller, ApiController, Async, HttpPost, NotFoundException, HttpPut, BadRequestException, HttpResponseException } from "dinoloop";
 import { OpenAPIV3 } from "express-oas-generator";
-import { Adapters, UUID } from "@logion/node-api";
-import { DispatchError } from '@polkadot/types/interfaces/system/types';
+import { UUID, Hash } from "@logion/node-api";
 
 import { components } from "./components.js";
 import { addTag, setControllerTag, setPathParameters, getDefaultResponsesNoContent, getRequestBody, getBodyContent } from "./doc.js";
 import { LogionService } from "../services/logion.service.js";
+import { ClosedCollectionLoc, ISubmittableResult, KeyringSigner, LogionClient, SignAndSendStrategy, requireDefined } from "@logion/client";
 
 type CreateCollectionItemView = components["schemas"]["CreateCollectionItemView"];
 type GetCollectionItemView = components["schemas"]["GetCollectionItemView"];
@@ -23,6 +23,15 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     CollectionController.addCollectionItem(spec);
     CollectionController.getCollectionItem(spec);
 }
+
+class GatewaySignAndSendStrategy implements SignAndSendStrategy {
+
+    canUnsub(result: ISubmittableResult): boolean {
+        return result.isInBlock;
+    }
+}
+
+const GATEWAY_SIGN_SEND_STRAGEGY = new GatewaySignAndSendStrategy();
 
 @injectable()
 @Controller('/collection')
@@ -51,64 +60,80 @@ export class CollectionController extends ApiController {
     @HttpPost('/:collectionLocId')
     @Async()
     async addCollectionItem(body: CreateCollectionItemView, collectionLocId: string): Promise<void> {
-        const url = body.webSocketUrl!;
-        const suri = body.suri!;
-        const itemId = body.itemId!;
-        const itemDescription = body.itemDescription!;
+        const url = requireDefined(body.webSocketUrl, () => new BadRequestException({ details: "Missing RPC URL" }));
+        const directoryEndpoint = requireDefined(body.directoryUrl, () => new BadRequestException({ details: "Missing directory URL" }));
+        const suri = requireDefined(body.suri, () => new BadRequestException({ details: "Missing Substrate URI" }));
+        const itemIdHex = requireDefined(body.itemId, () => new BadRequestException({ details: "Missing item ID" }));
+        if(!Hash.isValidHexHash(itemIdHex)) {
+            throw new BadRequestException({ details: "Invalid item ID, not a valid SHA-256 hash hex" });
+        }
+        const itemId = Hash.fromHex(itemIdHex);
+        const itemDescription = requireDefined(body.itemDescription, () => new BadRequestException({ details: "Missing item description" }));
         const locId = UUID.fromAnyString(collectionLocId);
-
         if(!locId) {
             throw new BadRequestException({ details: "Collection LOC ID is not a valid UUID" });
         }
 
-        const api = await this.logionService.buildApi(url);
-        const keyPair = this.logionService.buildKeyringPair(suri);
+        const keyring = this.logionService.buildKeyring(suri);
+        let api = await this.logionService.buildApi({
+            rpcEndpoints: [ url ],
+            directoryEndpoint,
+        });
+        const signer = new KeyringSigner(keyring, GATEWAY_SIGN_SEND_STRAGEGY);
+        const requester = api.logionApi.queries.getValidAccountId(keyring.getPairs()[0].address, "Polkadot");
+        api = await api.authenticate([ requester ], signer);
+        api = api.withCurrentAddress(requester);
 
         try {
-            await new Promise<void>(async (resolve, reject) => {
-                try {
-                    const unsub = await api.polkadot.tx.logionLoc
-                    .addCollectionItem(
-                        api.adapters.toLocId(locId),
-                        itemId,
-                        itemDescription,
-                        [],
-                        null,
-                        false,
-                        [],
-                    )
-                    .signAndSend(keyPair, (result) => {
-                        if (result.status.isInBlock) {
-                            unsub();
-                            if(result.dispatchError) {
-                                reject(result.dispatchError);
-                            } else {
-                                resolve();
-                            }
-                        }
-                    });
-                } catch(error) {
-                    console.trace(error)
-                    reject(error);
-                }
+            const collection = await this.getCollection({
+                api,
+                locId,
+            });
+            await collection.addCollectionItem({
+                itemId,
+                itemDescription,
+                signer
             });
         } catch(error) {
-            if(error && typeof error === 'object' && 'isModule' in error) {
-                const dispatchError = error as DispatchError;
-                const metaError = Adapters.getErrorMetadata(dispatchError);
-                throw new BadRequestException(metaError);
+            if(error && error instanceof HttpResponseException) {
+                throw error;
+            } else if(error && typeof error === "object" && "message" in error) {
+                throw new BadRequestException({ details: error.message });
             } else {
-                throw new BadRequestException({
-                    details: `${error}`
-                });
+                throw new BadRequestException({ details: `${ error }` });
             }
         } finally {
-            await api.polkadot.disconnect();
+            await api.disconnect();
+        }
+    }
+
+    private async getCollection(params: {
+        api: LogionClient,
+        locId: UUID,
+    }): Promise<ClosedCollectionLoc> {
+        const { api, locId } = params;
+        const loc = await api.logionApi.queries.getLegalOfficerCase(locId);
+        if(!loc) {
+            throw new BadRequestException({ details: "Collection LOC not found" });
+        }
+        const locs = await api.locsState({
+            spec: {
+                locTypes: ["Collection"],
+                statuses: ["CLOSED"],
+                requesterAddress: requireDefined(loc.requesterAddress).address,
+                ownerAddress: loc.owner,
+            }
+        });
+        const locState = locs.findById(locId);
+        if(locState instanceof ClosedCollectionLoc) {
+            return locState;
+        } else {
+            throw new BadRequestException({ details: "LOC is not a closed collection" });
         }
     }
 
     static getCollectionItem(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}"].put!;
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemIdHex}"].put!;
         operationObject.summary = "Retrieves an item from an existing collection";
         operationObject.description = "";
         operationObject.responses = {
@@ -122,7 +147,7 @@ export class CollectionController extends ApiController {
         };
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the collection loc",
-            'itemId': "The ID of the item in the collection"
+            'itemIdHex': "The ID of the item in the collection"
         });
         operationObject.requestBody = getRequestBody({
             description: "Item retrieval data",
@@ -130,33 +155,38 @@ export class CollectionController extends ApiController {
         });
     }
 
-    @HttpPut('/:collectionLocId/:itemId')
+    @HttpPut('/:collectionLocId/:itemIdHex')
     @Async()
-    async getCollectionItem(body: GetCollectionItemView, collectionLocId: string, itemId: string): Promise<CollectionItemView> {
-        const url = body.webSocketUrl!;
+    async getCollectionItem(body: GetCollectionItemView, collectionLocId: string, itemIdHex: string): Promise<CollectionItemView> {
+        const url = requireDefined(body.webSocketUrl, () => new BadRequestException({ details: "Missing RPC URL" }));
+        const directoryEndpoint = requireDefined(body.directoryUrl, () => new BadRequestException({ details: "Missing directory URL" }));
         const locId = UUID.fromAnyString(collectionLocId);
-
         if(!locId) {
             throw new BadRequestException({ details: "Collection LOC ID is not a valid UUID" });
         }
+        if(!Hash.isValidHexHash(itemIdHex)) {
+            throw new BadRequestException({ details: "Invalid item ID, not a valid SHA-256 hash hex" });
+        }
+        const itemId = Hash.fromHex(itemIdHex);
 
-        const api = await this.logionService.buildApi(url);
+        const api = await this.logionService.buildApi({
+            rpcEndpoints: [ url ],
+            directoryEndpoint,
+        });
+
         try {
-            const item = await api.queries.getCollectionItem(
-                locId,
-                itemId
-            );
+            const item = await api.public.findCollectionLocItemById({ locId, itemId });
             if(item) {
                 return {
                     collectionLocId,
-                    itemId,
-                    itemDescription: item.description,
+                    itemId: itemId.toHex(),
+                    itemDescription: item.description.validValue(),
                 }
             } else {
                 throw new NotFoundException();
             }
         } finally {
-            await api.polkadot.disconnect();
+            await api.disconnect();
         }
     }
 }

@@ -46,7 +46,7 @@ The gateway currently supports 2 operations:
 In order to add an item to a collection, a POST request must be sent to resource `/api/collection/{collectionLocId}`. See below for an example of request.
 
 ```
-curl -v http://localhost:8080/api/collection/$COLLECTION_LOC_ID -d '{"webSocketUrl":"wss://test-rpc01.logion.network","suri":"$SECRET_SEED","itemId":"$ITEM_ID","itemDescription":"$ITEM_DESCRIPTION"}' -H "Content-Type: application/json"
+curl -v http://localhost:8080/api/collection/$COLLECTION_LOC_ID -d '{"webSocketUrl":"wss://test-rpc01.logion.network","directoryUrl":"https://test-directory.logion.network","suri":"$SECRET_SEED","itemId":"$ITEM_ID","itemDescription":"$ITEM_DESCRIPTION"}' -H "Content-Type: application/json"
 ```
 
 If the response has status code `200`, then the item has been successfully submitted (i.e. the transaction was put in a block).
@@ -55,8 +55,6 @@ A response status code `400` may be returned in case of failure. The response bo
 
 ```
 {
-  "pallet": "...",
-  "error": "...",
   "details": "..."
 }
 ```
@@ -66,7 +64,7 @@ A response status code `400` may be returned in case of failure. The response bo
 A PUT request must be sent to resource `/api/collection/{collectionLocId}/{itemId}`. See below for an example of request.
 
 ```
-curl -v -X PUT http://localhost:8080/api/collection/$COLLECTION_LOC_ID/$ITEM_ID -d '{"webSocketUrl":"wss://test-rpc01.logion.network"}' -H "Content-Type: application/json"
+curl -v -X PUT http://localhost:8080/api/collection/$COLLECTION_LOC_ID/$ITEM_ID -d '{"webSocketUrl":"wss://test-rpc01.logion.network","directoryUrl":"https://test-directory.logion.network"}' -H "Content-Type: application/json"
 ```
 
 If the response has status code `200`, then the item exists in the given collection and the response body looks like this:
