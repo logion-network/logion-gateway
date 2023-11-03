@@ -4,6 +4,7 @@ import { waitReady } from "@polkadot/wasm-crypto";
 import { Adapters, UUID, Currency, buildApiClass } from "@logion/node-api";
 import axios from "axios";
 import { AcceptedRequest, KeyringSigner, LogionClient, OpenLoc, PendingRequest, Signer } from "@logion/client";
+import { NodeAxiosFileUploader } from "@logion/client-node";
 import { IKeyringPair, ISubmittableResult } from "@polkadot/types/types";
 import { SubmittableExtrinsic } from "@polkadot/api/promise/types";
 
@@ -59,7 +60,8 @@ async function setup(): Promise<void> {
 
     let client = await LogionClient.create({
         rpcEndpoints: [ "ws://127.0.0.1:9944" ],
-        directoryEndpoint: "http://localhost:8090"
+        directoryEndpoint: "http://localhost:8090",
+        buildFileUploader: () => new NodeAxiosFileUploader(),
     });
     const signer = new KeyringSigner(keyring, GATEWAY_SIGN_SEND_STRAGEGY);
     client = await client.authenticate([
@@ -116,7 +118,7 @@ async function createIdentityLoc(params: { client: LogionClient, signer: Signer 
     const pendingRequesterIdentityLoc = await requesterLocs.requestIdentityLoc({
         description: "My identity LOC",
         draft: false,
-        legalOfficer: requesterClient.getLegalOfficer(ALICE),
+        legalOfficerAddress: ALICE,
         userIdentity,
         userPostalAddress,
     });
@@ -125,10 +127,10 @@ async function createIdentityLoc(params: { client: LogionClient, signer: Signer 
     const pendingAliceIdentityLoc = aliceLocs.findById(identityLocId) as PendingRequest;
     await pendingAliceIdentityLoc.legalOfficer.accept({ signer });
     const acceptedRequesterIdentityLoc = await pendingRequesterIdentityLoc.refresh() as AcceptedRequest;
-    await acceptedRequesterIdentityLoc.open({ signer });
+    await acceptedRequesterIdentityLoc.open({ signer, autoPublish: false });
     aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Identity"], statuses: ["OPEN"] } });
     const openAliceIdentityLoc = aliceLocs.findById(identityLocId) as OpenLoc;
-    await openAliceIdentityLoc.legalOfficer.close({ signer });
+    await openAliceIdentityLoc.legalOfficer.close({ signer, autoAck: false });
 
     return identityLocId;
 }
@@ -144,17 +146,19 @@ async function createCollectionLoc(params: { client: LogionClient, signer: Signe
     const pendingRequesterLoc = await requesterLocs.requestCollectionLoc({
         description: "My collection LOC",
         draft: false,
-        legalOfficer: requesterClient.getLegalOfficer(ALICE),
+        legalOfficerAddress: ALICE,
+        valueFee: 0n,
+        legalFee: 0n,
     });
     const collectionLocId = pendingRequesterLoc.data().id;
     let aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Collection"], statuses: ["REVIEW_PENDING"] } });
     const pendingAliceLoc = aliceLocs.findById(collectionLocId) as PendingRequest;
     await pendingAliceLoc.legalOfficer.accept({ signer });
     const acceptedRequesterLoc = await pendingRequesterLoc.refresh() as AcceptedRequest;
-    await acceptedRequesterLoc.openCollection({ collectionCanUpload: false, collectionMaxSize: 1, signer });
+    await acceptedRequesterLoc.openCollection({ collectionCanUpload: false, collectionMaxSize: 1, autoPublish: false, signer });
     aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Collection"], statuses: ["OPEN"] } });
     const openAliceIdentityLoc = aliceLocs.findById(collectionLocId) as OpenLoc;
-    await openAliceIdentityLoc.legalOfficer.close({ signer });
+    await openAliceIdentityLoc.legalOfficer.close({ signer, autoAck: false });
 
     return collectionLocId;
 }
