@@ -1,15 +1,15 @@
 import { injectable } from "inversify";
 import { Keyring } from '@polkadot/api';
-import { LogionClient, LogionClientConfig } from '@logion/client';
-import FormData from "form-data";
+import { LogionClient } from '@logion/client';
+import { NodeAxiosFileUploader } from "@logion/client-node";
 
 @injectable()
 export class LogionService {
 
-    async buildApi(config: LogionClientConfig): Promise<LogionClient> {
+    async buildApi(config: { rpcEndpoints: string[], directoryEndpoint: string }): Promise<LogionClient> {
         return await LogionClient.create({
             ...config,
-            formDataLikeFactory: () => new FormData(),
+            buildFileUploader: () => new NodeAxiosFileUploader(),
         });
     }
 
