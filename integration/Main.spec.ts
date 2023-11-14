@@ -149,6 +149,8 @@ async function createCollectionLoc(params: { client: LogionClient, signer: Signe
         legalOfficerAddress: ALICE,
         valueFee: 0n,
         legalFee: 0n,
+        collectionItemFee: 10n,
+        tokensRecordFee: 15n,
     });
     const collectionLocId = pendingRequesterLoc.data().id;
     let aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Collection"], statuses: ["REVIEW_PENDING"] } });
