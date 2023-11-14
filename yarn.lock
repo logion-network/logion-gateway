@@ -384,31 +384,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/client-node@npm:^0.1.0-1":
-  version: 0.1.0-1
-  resolution: "@logion/client-node@npm:0.1.0-1"
+"@logion/client-node@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "@logion/client-node@npm:0.1.0"
   dependencies:
-    "@logion/client": ^0.34.0-1
+    "@logion/client": ^0.34.0
     form-data: ^4.0.0
-  checksum: 085583e20b0fc706bf4da68202ebcae0c9a621d7ba95fca7229822d0f58a6b35f444543aaee7df025f9c4f17896a8f1ac39bef38f582723d4463c74430368a72
+  checksum: 6d17441edc1a2bd83e374ae32b8bd62193d24dfbfad08eee664843aa568a157b147338ee9aeac985552db2a4196e5bfe0d276a9840cca6bbceb9f44cdbafe18a
   languageName: node
   linkType: hard
 
-"@logion/client@npm:^0.34.0-1":
-  version: 0.34.0-1
-  resolution: "@logion/client@npm:0.34.0-1"
+"@logion/client@npm:^0.34.0":
+  version: 0.34.0
+  resolution: "@logion/client@npm:0.34.0"
   dependencies:
-    "@logion/node-api": ^0.24.0
+    "@logion/node-api": ^0.25.0
     axios: ^0.27.2
     luxon: ^3.0.1
     mime-db: ^1.52.0
-  checksum: 11da4f4e95c715de7157a8721b79dddfcfd8c7097d36fbf00c70675eddcc4ed4444358811255e2d0f30f742cedf9c2bc0157bfcbe64571cf40acd5dc5871a00f
+  checksum: d8633f42f179d200ea0fb368a44dd37ee6601062a84c46929cf156133e9f4358b49b0dbd1a232e7fbddd270df6e8fcfb1343e828b27aae37e77d931df8f4dc1f
   languageName: node
   linkType: hard
 
-"@logion/node-api@npm:^0.24.0":
-  version: 0.24.0
-  resolution: "@logion/node-api@npm:0.24.0"
+"@logion/node-api@npm:^0.25.0":
+  version: 0.25.0
+  resolution: "@logion/node-api@npm:0.25.0"
   dependencies:
     "@polkadot/api": ^10.10.1
     "@polkadot/util": ^12.5.1
@@ -416,7 +416,7 @@ __metadata:
     "@types/uuid": ^9.0.2
     fast-sha256: ^1.3.0
     uuid: ^9.0.0
-  checksum: 8d4098e78a8a18b8ddbdfaeaabd0384f4c5112f3599873466a192dac7186bba744b0abab1056ee0c9f6acd6f9220c5f9d1053f4968f24ce9e8fe52ec832f2a62
+  checksum: 1ef25c8d565007a293be71275123c37aaee24b66dff822e217312de31f3f4e70fa4e88ecbcc488e1dd50e2ac33dbcafa9a5b72342eb50d8cec01e730f089844e
   languageName: node
   linkType: hard
 
@@ -2581,7 +2581,7 @@ __metadata:
   resolution: "logion-gateway@workspace:."
   dependencies:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
-    "@logion/client-node": ^0.1.0-1
+    "@logion/client-node": ^0.1.0
     "@tsconfig/node18": ^1.0.1
     "@types/cors": ^2.8.12
     "@types/express": ^4.17.13
