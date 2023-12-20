@@ -90,8 +90,10 @@ export class CollectionController extends ApiController {
                 locId,
             });
             await collection.addCollectionItem({
-                itemId,
-                itemDescription,
+                payload: {
+                    itemId,
+                    itemDescription,
+                },
                 signer
             });
         } catch(error) {
