@@ -1,7 +1,7 @@
 import { Keyring } from "@polkadot/api";
 import { KeyringPair } from "@polkadot/keyring/types";
 import { waitReady } from "@polkadot/wasm-crypto";
-import { Adapters, UUID, Currency, buildApiClass } from "@logion/node-api";
+import { Adapters, UUID, Lgnt, buildApiClass } from "@logion/node-api";
 import axios from "axios";
 import { AcceptedRequest, KeyringSigner, LogionClient, OpenLoc, PendingRequest, Signer } from "@logion/client";
 import { NodeAxiosFileUploader } from "@logion/client-node";
@@ -96,7 +96,7 @@ async function createIdentityLoc(params: { client: LogionClient, signer: Signer 
     const aliceClient = client.withCurrentAddress(client.logionApi.queries.getValidAccountId(ALICE, "Polkadot"));
     let aliceBalances = await aliceClient.balanceState();
 
-    const amount = Currency.nLgnt(5000n);
+    const amount = Lgnt.from(5000n);
     aliceBalances = await aliceBalances.transfer({ amount, destination: REQUESTER, signer });
 
     const requesterClient = client.withCurrentAddress(client.logionApi.queries.getValidAccountId(REQUESTER, "Polkadot"));
@@ -147,10 +147,10 @@ async function createCollectionLoc(params: { client: LogionClient, signer: Signe
         description: "My collection LOC",
         draft: false,
         legalOfficerAddress: ALICE,
-        valueFee: 0n,
-        legalFee: 0n,
-        collectionItemFee: 10n,
-        tokensRecordFee: 15n,
+        valueFee: Lgnt.zero(),
+        legalFee: Lgnt.zero(),
+        collectionItemFee: Lgnt.fromCanonical(10n),
+        tokensRecordFee: Lgnt.fromCanonical(15n),
     });
     const collectionLocId = pendingRequesterLoc.data().id;
     let aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Collection"], statuses: ["REVIEW_PENDING"] } });
