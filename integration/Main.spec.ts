@@ -151,13 +151,17 @@ async function createCollectionLoc(params: { client: LogionClient, signer: Signe
         legalFee: Lgnt.zero(),
         collectionItemFee: Lgnt.fromCanonical(10n),
         tokensRecordFee: Lgnt.fromCanonical(15n),
+        collectionParams: {
+            canUpload: false,
+            maxSize: 1,
+        },
     });
     const collectionLocId = pendingRequesterLoc.data().id;
     let aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Collection"], statuses: ["REVIEW_PENDING"] } });
     const pendingAliceLoc = aliceLocs.findById(collectionLocId) as PendingRequest;
     await pendingAliceLoc.legalOfficer.accept({ signer });
     const acceptedRequesterLoc = await pendingRequesterLoc.refresh() as AcceptedRequest;
-    await acceptedRequesterLoc.openCollection({ collectionCanUpload: false, collectionMaxSize: 1, autoPublish: false, signer });
+    await acceptedRequesterLoc.open({ autoPublish: false, signer });
     aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Collection"], statuses: ["OPEN"] } });
     const openAliceIdentityLoc = aliceLocs.findById(collectionLocId) as OpenLoc;
     await openAliceIdentityLoc.legalOfficer.close({ signer, autoAck: false });
