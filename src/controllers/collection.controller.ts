@@ -1,7 +1,7 @@
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpPost, NotFoundException, HttpPut, BadRequestException, HttpResponseException } from "dinoloop";
 import { OpenAPIV3 } from "express-oas-generator";
-import { UUID, Hash } from "@logion/node-api";
+import { UUID, Hash, ValidAccountId } from "@logion/node-api";
 
 import { components } from "./components.js";
 import { addTag, setControllerTag, setPathParameters, getDefaultResponsesNoContent, getRequestBody, getBodyContent } from "./doc.js";
@@ -80,7 +80,7 @@ export class CollectionController extends ApiController {
             directoryEndpoint,
         });
         const signer = new KeyringSigner(keyring, GATEWAY_SIGN_SEND_STRAGEGY);
-        const requester = api.logionApi.queries.getValidAccountId(keyring.getPairs()[0].address, "Polkadot");
+        const requester = ValidAccountId.polkadot(keyring.getPairs()[0].address);
         api = await api.authenticate([ requester ], signer);
         api = api.withCurrentAddress(requester);
 
