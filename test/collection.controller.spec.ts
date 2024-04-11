@@ -15,8 +15,8 @@ const expectedDirectoryUrl = "http://localhost:8090";
 const expectedCollectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const expectedItemId = Hash.fromHex("0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705");
 const expectedSuri = "0x123456789abcdf";
-const expectedRequester = "5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb";
-const expectedOwner = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
+const expectedRequester = ValidAccountId.polkadot("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
+const expectedOwner = ValidAccountId.polkadot("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
 const expectedDescription = "Some description";
 const expectedError = "Expected error";
 
@@ -90,23 +90,24 @@ describe("CollectionController", () => {
 })
 
 function mockForAdd(container: Container): void {
-    const { client, keyring, accountId, locState } = mockLogionService(container);
+    const { client, keyring, locState } = mockLogionService(container);
 
     const keypair = new Mock<KeyringPair>();
-    keypair.setup(instance => instance.address).returns(expectedRequester);
+    keypair.setup(instance => instance.address).returns(expectedRequester.address);
     keyring.setup(instance => instance.getPairs()).returns([ keypair.object() ]);
 
     locState.setup(instance => instance.addCollectionItem(ItIsExpectedAddItemParams())).returnsAsync(locState.object());
 
-    client.setup(instance => instance.withCurrentAddress(accountId.object())).returns(client.object());
     client.setup(instance => instance.authenticate(It.IsAny(), It.IsAny())).returnsAsync(client.object());
+    client.setup(instance => instance.withCurrentAddress(
+        It.Is<ValidAccountId>(account => account.equals(expectedRequester)),
+    )).returns(client.object());
 }
 
 function mockLogionService(container: Container): {
     nodeApi: Mock<LogionNodeApiClass>,
     client: Mock<LogionClient>,
     keyring: Mock<Keyring>,
-    accountId: Mock<ValidAccountId>,
     locState: Mock<ClosedCollectionLoc>,
 } {
     const nodeApi = new Mock<LogionNodeApiClass>();
@@ -115,13 +116,9 @@ function mockLogionService(container: Container): {
     client.setup(instance => instance.logionApi).returns(nodeApi.object());
     client.setup(instance => instance.disconnect()).returnsAsync();
 
-    const accountId = new Mock<ValidAccountId>();
-    accountId.setup(instance => instance.address).returns(expectedRequester);
-    nodeApi.setup(instance => instance.queries.getValidAccountId(expectedRequester, "Polkadot")).returns(accountId.object());
-
     const loc = new Mock<LegalOfficerCase>();
-    loc.setup(instance => instance.requesterAddress).returns(accountId.object());
-    loc.setup(instance => instance.owner).returns(expectedOwner);
+    loc.setup(instance => instance.requesterAddress).returns(expectedRequester);
+    loc.setup(instance => instance.owner).returns(expectedOwner.address);
     nodeApi.setup(instance => instance.queries.getLegalOfficerCase(ItIsExpectedLocId())).returnsAsync(loc.object());
 
     const locState = new Mock<ClosedCollectionLoc>();
@@ -138,7 +135,7 @@ function mockLogionService(container: Container): {
 
     container.bind(LogionService).toConstantValue(logionService.object());
 
-    return { nodeApi, client, keyring, accountId, locState };
+    return { nodeApi, client, keyring, locState };
 }
 
 function IsExpectedConfig() {
@@ -158,8 +155,8 @@ function ItIsExpectedLocsSpec() {
         && params.spec?.locTypes[0] === "Collection"
         && params.spec?.statuses.length === 1
         && params.spec?.statuses[0] === "CLOSED"
-        && params.spec.ownerAddress === expectedOwner
-        && params.spec.requesterAddress === expectedRequester
+        && params.spec.ownerAddress === expectedOwner.address
+        && params.spec.requesterAddress === expectedRequester.address
     );
 }
 
@@ -171,16 +168,18 @@ function ItIsExpectedAddItemParams() {
 }
 
 function mockForError(container: Container): void {
-    const { client, keyring, locState, accountId } = mockLogionService(container);
+    const { client, keyring, locState } = mockLogionService(container);
 
     const keypair = new Mock<KeyringPair>();
-    keypair.setup(instance => instance.address).returns(expectedRequester);
+    keypair.setup(instance => instance.address).returns(expectedRequester.address);
     keyring.setup(instance => instance.getPairs()).returns([ keypair.object() ]);
 
     locState.setup(instance => instance.addCollectionItem)
         .returns(_ => Promise.reject(new Error(expectedError)));
 
-    client.setup(instance => instance.withCurrentAddress(accountId.object())).returns(client.object());
+        client.setup(instance => instance.withCurrentAddress(
+            It.Is<ValidAccountId>(account => account.equals(expectedRequester)),
+        )).returns(client.object());
     client.setup(instance => instance.authenticate(It.IsAny(), It.IsAny())).returnsAsync(client.object());
 }
 
