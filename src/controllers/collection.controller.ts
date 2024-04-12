@@ -82,7 +82,7 @@ export class CollectionController extends ApiController {
         const signer = new KeyringSigner(keyring, GATEWAY_SIGN_SEND_STRAGEGY);
         const requester = ValidAccountId.polkadot(keyring.getPairs()[0].address);
         api = await api.authenticate([ requester ], signer);
-        api = api.withCurrentAddress(requester);
+        api = api.withCurrentAccount(requester);
 
         try {
             const collection = await this.getCollection({
@@ -122,8 +122,8 @@ export class CollectionController extends ApiController {
             spec: {
                 locTypes: ["Collection"],
                 statuses: ["CLOSED"],
-                requesterAddress: requireDefined(loc.requesterAddress).address,
-                ownerAddress: loc.owner,
+                requesterAddress: requireDefined(loc.requesterAccountId).address,
+                ownerAddress: loc.owner.address,
             }
         });
         const locState = locs.findById(locId);

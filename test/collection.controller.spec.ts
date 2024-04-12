@@ -99,7 +99,7 @@ function mockForAdd(container: Container): void {
     locState.setup(instance => instance.addCollectionItem(ItIsExpectedAddItemParams())).returnsAsync(locState.object());
 
     client.setup(instance => instance.authenticate(It.IsAny(), It.IsAny())).returnsAsync(client.object());
-    client.setup(instance => instance.withCurrentAddress(
+    client.setup(instance => instance.withCurrentAccount(
         It.Is<ValidAccountId>(account => account.equals(expectedRequester)),
     )).returns(client.object());
 }
@@ -117,8 +117,8 @@ function mockLogionService(container: Container): {
     client.setup(instance => instance.disconnect()).returnsAsync();
 
     const loc = new Mock<LegalOfficerCase>();
-    loc.setup(instance => instance.requesterAddress).returns(expectedRequester);
-    loc.setup(instance => instance.owner).returns(expectedOwner.address);
+    loc.setup(instance => instance.requesterAccountId).returns(expectedRequester);
+    loc.setup(instance => instance.owner).returns(expectedOwner);
     nodeApi.setup(instance => instance.queries.getLegalOfficerCase(ItIsExpectedLocId())).returnsAsync(loc.object());
 
     const locState = new Mock<ClosedCollectionLoc>();
@@ -177,7 +177,7 @@ function mockForError(container: Container): void {
     locState.setup(instance => instance.addCollectionItem)
         .returns(_ => Promise.reject(new Error(expectedError)));
 
-        client.setup(instance => instance.withCurrentAddress(
+        client.setup(instance => instance.withCurrentAccount(
             It.Is<ValidAccountId>(account => account.equals(expectedRequester)),
         )).returns(client.object());
     client.setup(instance => instance.authenticate(It.IsAny(), It.IsAny())).returnsAsync(client.object());
