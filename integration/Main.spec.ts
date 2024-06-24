@@ -1,7 +1,7 @@
 import { Keyring } from "@polkadot/api";
 import { KeyringPair } from "@polkadot/keyring/types";
 import { waitReady } from "@polkadot/wasm-crypto";
-import { Adapters, UUID, Lgnt, buildApiClass } from "@logion/node-api";
+import { Adapters, UUID, Lgnt, ValidAccountId, LogionNodeApiClass } from "@logion/node-api";
 import axios from "axios";
 import { AcceptedRequest, KeyringSigner, LogionClient, OpenLoc, PendingRequest, Signer } from "@logion/client";
 import { NodeAxiosFileUploader } from "@logion/client-node";
@@ -19,7 +19,6 @@ describe("Gateway", () => {
             console.log("Adding item with gateway");
             await axios.post(`http://localhost:8080/api/collection/${collectionLocId.toDecimalString()}`, {
                 webSocketUrl: "ws://node:9944",
-                directoryUrl: "http://directory:8080",
                 suri: REQUESTER_SECRET_SEED,
                 itemId,
                 itemDescription,
@@ -28,7 +27,6 @@ describe("Gateway", () => {
             console.log("Getting item with gateway");
             const response = await axios.put(`http://localhost:8080/api/collection/${collectionLocId.toDecimalString()}/${itemId}`, {
                 webSocketUrl: "ws://node:9944",
-                directoryUrl: "http://directory:8080",
             });
             expect(response.data.collectionLocId).toBe(collectionLocId.toDecimalString());
             expect(response.data.itemId).toBe(itemId);
@@ -60,13 +58,12 @@ async function setup(): Promise<void> {
 
     let client = await LogionClient.create({
         rpcEndpoints: [ "ws://127.0.0.1:9944" ],
-        directoryEndpoint: "http://localhost:8090",
         buildFileUploader: () => new NodeAxiosFileUploader(),
     });
     const signer = new KeyringSigner(keyring, GATEWAY_SIGN_SEND_STRAGEGY);
     client = await client.authenticate([
-        client.logionApi.queries.getValidAccountId(ALICE, "Polkadot"),
-        client.logionApi.queries.getValidAccountId(REQUESTER, "Polkadot"),
+        ALICE,
+        REQUESTER,
     ], signer);
 
     await createIdentityLoc({ client, signer });
@@ -77,11 +74,11 @@ async function setup(): Promise<void> {
 
 const ALICE_SEED = "0xe5be9a5092b81bca64be81d212e7f2f9eba183bb7a90954f7b76361f6edb5c0a";
 
-export const ALICE = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
+export const ALICE = ValidAccountId.polkadot("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
 
 const REQUESTER_SECRET_SEED = "unique chase zone team upset caution match west enter eyebrow limb wrist";
 
-export const REQUESTER = "5DPLBrBxniGbGdFe1Lmdpkt6K3aNjhoNPJrSJ51rwcmhH2Tn";
+export const REQUESTER = ValidAccountId.polkadot("5DPLBrBxniGbGdFe1Lmdpkt6K3aNjhoNPJrSJ51rwcmhH2Tn");
 
 const GATEWAY_SIGN_SEND_STRAGEGY = {
     canUnsub(result: ISubmittableResult): boolean {
@@ -93,13 +90,13 @@ async function createIdentityLoc(params: { client: LogionClient, signer: Signer 
     const { client, signer } = params;
 
     console.log("Setting requester balance");
-    const aliceClient = client.withCurrentAddress(client.logionApi.queries.getValidAccountId(ALICE, "Polkadot"));
+    const aliceClient = client.withCurrentAccount(ALICE);
     let aliceBalances = await aliceClient.balanceState();
 
     const amount = Lgnt.from(5000n);
-    aliceBalances = await aliceBalances.transfer({ amount, destination: REQUESTER, signer });
+    aliceBalances = await aliceBalances.transfer({ payload: { amount, destination: REQUESTER }, signer });
 
-    const requesterClient = client.withCurrentAddress(client.logionApi.queries.getValidAccountId(REQUESTER, "Polkadot"));
+    const requesterClient = client.withCurrentAccount(REQUESTER);
     let requesterLocs = await requesterClient.locsState();
     const userIdentity = {
         firstName: "John",
@@ -118,19 +115,19 @@ async function createIdentityLoc(params: { client: LogionClient, signer: Signer 
     const pendingRequesterIdentityLoc = await requesterLocs.requestIdentityLoc({
         description: "My identity LOC",
         draft: false,
-        legalOfficerAddress: ALICE,
+        legalOfficerAccountId: ALICE,
         userIdentity,
         userPostalAddress,
     });
     const identityLocId = pendingRequesterIdentityLoc.data().id;
-    let aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Identity"], statuses: ["REVIEW_PENDING"] } });
+    let aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE.address, locTypes: ["Identity"], statuses: ["REVIEW_PENDING"] } });
     const pendingAliceIdentityLoc = aliceLocs.findById(identityLocId) as PendingRequest;
     await pendingAliceIdentityLoc.legalOfficer.accept({ signer });
     const acceptedRequesterIdentityLoc = await pendingRequesterIdentityLoc.refresh() as AcceptedRequest;
-    await acceptedRequesterIdentityLoc.open({ signer, autoPublish: false });
-    aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Identity"], statuses: ["OPEN"] } });
+    await acceptedRequesterIdentityLoc.open({ signer, payload: { autoPublish: false }});
+    aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE.address, locTypes: ["Identity"], statuses: ["OPEN"] } });
     const openAliceIdentityLoc = aliceLocs.findById(identityLocId) as OpenLoc;
-    await openAliceIdentityLoc.legalOfficer.close({ signer, autoAck: false });
+    await openAliceIdentityLoc.legalOfficer.close({ signer, payload: { autoAck: false }});
 
     return identityLocId;
 }
@@ -138,15 +135,15 @@ async function createIdentityLoc(params: { client: LogionClient, signer: Signer 
 async function createCollectionLoc(params: { client: LogionClient, signer: Signer }): Promise<UUID> {
     const { client, signer } = params;
 
-    const aliceClient = client.withCurrentAddress(client.logionApi.queries.getValidAccountId(ALICE, "Polkadot"));
-    const requesterClient = client.withCurrentAddress(client.logionApi.queries.getValidAccountId(REQUESTER, "Polkadot"));
+    const aliceClient = client.withCurrentAccount(ALICE);
+    const requesterClient = client.withCurrentAccount(REQUESTER);
 
     console.log("Creating collection LOC");
     let requesterLocs = await requesterClient.locsState();
     const pendingRequesterLoc = await requesterLocs.requestCollectionLoc({
         description: "My collection LOC",
         draft: false,
-        legalOfficerAddress: ALICE,
+        legalOfficerAccountId: ALICE,
         valueFee: Lgnt.zero(),
         legalFee: Lgnt.zero(),
         collectionItemFee: Lgnt.fromCanonical(10n),
@@ -157,21 +154,21 @@ async function createCollectionLoc(params: { client: LogionClient, signer: Signe
         },
     });
     const collectionLocId = pendingRequesterLoc.data().id;
-    let aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Collection"], statuses: ["REVIEW_PENDING"] } });
+    let aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE.address, locTypes: ["Collection"], statuses: ["REVIEW_PENDING"] } });
     const pendingAliceLoc = aliceLocs.findById(collectionLocId) as PendingRequest;
     await pendingAliceLoc.legalOfficer.accept({ signer });
     const acceptedRequesterLoc = await pendingRequesterLoc.refresh() as AcceptedRequest;
-    await acceptedRequesterLoc.open({ autoPublish: false, signer });
-    aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE, locTypes: ["Collection"], statuses: ["OPEN"] } });
+    await acceptedRequesterLoc.open({ payload: { autoPublish: false }, signer });
+    aliceLocs = await aliceClient.locsState({ spec: { ownerAddress: ALICE.address, locTypes: ["Collection"], statuses: ["OPEN"] } });
     const openAliceIdentityLoc = aliceLocs.findById(collectionLocId) as OpenLoc;
-    await openAliceIdentityLoc.legalOfficer.close({ signer, autoAck: false });
+    await openAliceIdentityLoc.legalOfficer.close({ signer, payload: { autoAck: false }});
 
     return collectionLocId;
 }
 
 async function updateAliceBackend() {
     console.log("Resetting Alice backend URL on chain");
-    const api = await buildApiClass("ws://127.0.0.1:9944");
+    const api = await LogionNodeApiClass.connect("ws://127.0.0.1:9944");
     await signAndSend(alice, api.polkadot.tx.loAuthorityList
         .updateLegalOfficer(alice.address, {
             Host: {

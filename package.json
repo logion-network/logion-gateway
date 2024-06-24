@@ -1,6 +1,6 @@
 {
     "name": "logion-gateway",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "private": true,
     "author": {
         "name": "Logion Team",
@@ -18,7 +18,7 @@
         "coverage": "nyc yarn run test"
     },
     "dependencies": {
-        "@logion/client": "^0.43.0",
+        "@logion/client": "^0.46.0-6",
         "@logion/client-node": "^0.3.5",
         "ansi-regex": "^6.0.1",
         "body-parser": "^1.19.1",

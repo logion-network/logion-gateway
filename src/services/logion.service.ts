@@ -6,7 +6,7 @@ import { NodeAxiosFileUploader } from "@logion/client-node";
 @injectable()
 export class LogionService {
 
-    async buildApi(config: { rpcEndpoints: string[], directoryEndpoint: string }): Promise<LogionClient> {
+    async buildApi(config: { rpcEndpoints: string[] }): Promise<LogionClient> {
         return await LogionClient.create({
             ...config,
             buildFileUploader: () => new NodeAxiosFileUploader(),

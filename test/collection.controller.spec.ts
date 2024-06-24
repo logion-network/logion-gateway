@@ -11,7 +11,6 @@ import { LogionNodeApiClass, UUID, Hash, ValidAccountId, LegalOfficerCase } from
 import { AddCollectionItemParams, ClosedCollectionLoc, FetchAllLocsParams, LocsState, LogionClient, LogionClientConfig, CollectionItem, HashString } from "@logion/client";
 
 const expectedWebSocketUrl = "ws://localhost:9944";
-const expectedDirectoryUrl = "http://localhost:8090";
 const expectedCollectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const expectedItemId = Hash.fromHex("0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705");
 const expectedSuri = "0x123456789abcdf";
@@ -30,7 +29,6 @@ describe("CollectionController", () => {
             .post(`/api/collection/${ expectedCollectionLocId }`)
             .send({
                 webSocketUrl: expectedWebSocketUrl,
-                directoryUrl: expectedDirectoryUrl,
                 suri: expectedSuri,
                 itemId: expectedItemId.toHex(),
                 itemDescription: expectedDescription
@@ -46,7 +44,6 @@ describe("CollectionController", () => {
             .post(`/api/collection/${ expectedCollectionLocId }`)
             .send({
                 webSocketUrl: expectedWebSocketUrl,
-                directoryUrl: expectedDirectoryUrl,
                 suri: expectedSuri,
                 itemId: expectedItemId.toHex(),
                 itemDescription: expectedDescription
@@ -65,7 +62,6 @@ describe("CollectionController", () => {
             .put(`/api/collection/${ expectedCollectionLocId }/${ expectedItemId.toHex() }`)
             .send({
                 webSocketUrl: expectedWebSocketUrl,
-                directoryUrl: expectedDirectoryUrl,
             })
             .expect(200)
             .then(response => {
@@ -83,7 +79,6 @@ describe("CollectionController", () => {
             .put(`/api/collection/${ expectedCollectionLocId }/${ Hash.of("unknown-item").toHex() }`)
             .send({
                 webSocketUrl: expectedWebSocketUrl,
-                directoryUrl: expectedDirectoryUrl,
             })
             .expect(404);
     })
@@ -140,8 +135,7 @@ function mockLogionService(container: Container): {
 
 function IsExpectedConfig() {
     return It.Is<LogionClientConfig>(config =>
-        config.directoryEndpoint === expectedDirectoryUrl
-        && config.rpcEndpoints[0] === expectedWebSocketUrl
+        config.rpcEndpoints[0] === expectedWebSocketUrl
     );
 }
 

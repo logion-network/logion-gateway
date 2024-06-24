@@ -61,7 +61,6 @@ export class CollectionController extends ApiController {
     @Async()
     async addCollectionItem(body: CreateCollectionItemView, collectionLocId: string): Promise<void> {
         const url = requireDefined(body.webSocketUrl, () => new BadRequestException({ details: "Missing RPC URL" }));
-        const directoryEndpoint = requireDefined(body.directoryUrl, () => new BadRequestException({ details: "Missing directory URL" }));
         const suri = requireDefined(body.suri, () => new BadRequestException({ details: "Missing Substrate URI" }));
         const itemIdHex = requireDefined(body.itemId, () => new BadRequestException({ details: "Missing item ID" }));
         if(!Hash.isValidHexHash(itemIdHex)) {
@@ -77,7 +76,6 @@ export class CollectionController extends ApiController {
         const keyring = this.logionService.buildKeyring(suri);
         let api = await this.logionService.buildApi({
             rpcEndpoints: [ url ],
-            directoryEndpoint,
         });
         const signer = new KeyringSigner(keyring, GATEWAY_SIGN_SEND_STRAGEGY);
         const requester = ValidAccountId.polkadot(keyring.getPairs()[0].address);
@@ -161,7 +159,6 @@ export class CollectionController extends ApiController {
     @Async()
     async getCollectionItem(body: GetCollectionItemView, collectionLocId: string, itemIdHex: string): Promise<CollectionItemView> {
         const url = requireDefined(body.webSocketUrl, () => new BadRequestException({ details: "Missing RPC URL" }));
-        const directoryEndpoint = requireDefined(body.directoryUrl, () => new BadRequestException({ details: "Missing directory URL" }));
         const locId = UUID.fromAnyString(collectionLocId);
         if(!locId) {
             throw new BadRequestException({ details: "Collection LOC ID is not a valid UUID" });
@@ -173,7 +170,6 @@ export class CollectionController extends ApiController {
 
         const api = await this.logionService.buildApi({
             rpcEndpoints: [ url ],
-            directoryEndpoint,
         });
 
         try {
