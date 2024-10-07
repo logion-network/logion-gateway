@@ -1,11 +1,11 @@
-import { buildApiClass } from "@logion/node-api";
+import { LogionNodeApiClass } from "@logion/node-api";
 import { Keyring } from '@polkadot/api';
 
 let api;
 let keyring;
 let alice;
 
-buildApiClass("ws://localhost:9944")
+LogionNodeApiClass.connect("ws://localhost:9944")
 .then(api0 => {
     api = api0.polkadot;
     keyring = new Keyring({ type: 'sr25519' });

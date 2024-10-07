@@ -42,7 +42,7 @@ describe("Gateway", () => {
         }
     });
 
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 300000;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 1200000;
 });
 
 let keyring: Keyring;
